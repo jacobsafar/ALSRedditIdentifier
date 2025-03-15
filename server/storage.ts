@@ -1,4 +1,6 @@
-import { MonitoredPost, MonitoredSubreddit, InsertPost, InsertSubreddit, Config } from "@shared/schema";
+import { MonitoredPost, MonitoredSubreddit, InsertPost, InsertSubreddit, Config, monitoredSubreddits, monitoredPosts } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // Subreddit management
@@ -17,76 +19,57 @@ export interface IStorage {
   updateConfig(config: Config): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private subreddits: Map<number, MonitoredSubreddit>;
-  private posts: Map<number, MonitoredPost>;
-  private config: Config;
-  private currentSubredditId: number;
-  private currentPostId: number;
-
-  constructor() {
-    this.subreddits = new Map();
-    this.posts = new Map();
-    this.currentSubredditId = 1;
-    this.currentPostId = 1;
-    this.config = {
-      scoreThreshold: 7,
-      checkFrequency: 60,
-      openAiPrompt: "You are an assistant analyzing Reddit content for AI-related sentiment. Rate the relevance and negativity from 1-10, where 10 indicates high relevance and strong negative sentiment about AI. Provide analysis and a suggested reply.",
-    };
-  }
+export class DatabaseStorage implements IStorage {
+  private config: Config = {
+    scoreThreshold: 7,
+    checkFrequency: 60,
+    openAiPrompt: "You are an assistant analyzing Reddit content for AI-related sentiment. Rate the relevance and negativity from 1-10, where 10 indicates high relevance and strong negative sentiment about AI. Provide analysis and a suggested reply.",
+  };
 
   async getSubreddits(): Promise<MonitoredSubreddit[]> {
-    return Array.from(this.subreddits.values());
+    return await db.select().from(monitoredSubreddits);
   }
 
   async addSubreddit(subreddit: InsertSubreddit): Promise<MonitoredSubreddit> {
-    const id = this.currentSubredditId++;
-    const newSubreddit: MonitoredSubreddit = { 
-      ...subreddit, 
-      id,
-      isActive: subreddit.isActive || 1
-    };
-    this.subreddits.set(id, newSubreddit);
+    const [newSubreddit] = await db
+      .insert(monitoredSubreddits)
+      .values(subreddit)
+      .returning();
     return newSubreddit;
   }
 
   async removeSubreddit(id: number): Promise<void> {
-    this.subreddits.delete(id);
+    await db.delete(monitoredSubreddits).where(eq(monitoredSubreddits.id, id));
   }
 
   async updateSubredditStatus(id: number, isActive: number): Promise<void> {
-    const subreddit = this.subreddits.get(id);
-    if (subreddit) {
-      this.subreddits.set(id, { ...subreddit, isActive });
-    }
+    await db
+      .update(monitoredSubreddits)
+      .set({ isActive })
+      .where(eq(monitoredSubreddits.id, id));
   }
 
   async getPosts(filter?: { status?: string }): Promise<MonitoredPost[]> {
-    let posts = Array.from(this.posts.values());
+    let query = db.select().from(monitoredPosts);
     if (filter?.status) {
-      posts = posts.filter(post => post.status === filter.status);
+      query = query.where(eq(monitoredPosts.status, filter.status));
     }
-    return posts;
+    return await query;
   }
 
   async addPost(post: InsertPost): Promise<MonitoredPost> {
-    const id = this.currentPostId++;
-    const newPost: MonitoredPost = {
-      ...post,
-      id,
-      status: post.status || "pending",
-      suggestedReply: post.suggestedReply || null
-    };
-    this.posts.set(id, newPost);
+    const [newPost] = await db
+      .insert(monitoredPosts)
+      .values(post)
+      .returning();
     return newPost;
   }
 
   async updatePostStatus(id: number, status: string): Promise<void> {
-    const post = this.posts.get(id);
-    if (post) {
-      this.posts.set(id, { ...post, status });
-    }
+    await db
+      .update(monitoredPosts)
+      .set({ status })
+      .where(eq(monitoredPosts.id, id));
   }
 
   async getConfig(): Promise<Config> {
@@ -98,4 +81,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
