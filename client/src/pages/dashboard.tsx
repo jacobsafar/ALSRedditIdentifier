@@ -40,15 +40,15 @@ export default function Dashboard() {
 
       if (data.errors?.length > 0) {
         toast({ 
-          title: `Processed ${data.message}`,
-          description: "Some errors occurred during processing. Check the logs for details.",
-          variant: "warning"
+          title: data.message,
+          description: data.errors.join('\n'),
+          variant: "destructive"
         });
       } else {
         toast({ 
           title: "Content fetch complete",
           description: data.message,
-          variant: "success"
+          variant: "default"
         });
       }
 

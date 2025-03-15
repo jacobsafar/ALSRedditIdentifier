@@ -27,6 +27,7 @@ export class RedditClient {
     try {
       console.log(`Fetching posts from r/${subreddit}`);
       const posts = await this.client.getSubreddit(subreddit).getNew({ limit });
+      console.log(`Successfully fetched ${posts.length} posts`);
       return posts.map(post => ({
         postId: post.id,
         subreddit: post.subreddit.display_name,
@@ -47,6 +48,7 @@ export class RedditClient {
     try {
       console.log(`Fetching comments from r/${subreddit}`);
       const comments = await this.client.getSubreddit(subreddit).getNewComments({ limit });
+      console.log(`Successfully fetched ${comments.length} comments`);
       return comments.map(comment => ({
         postId: comment.id,
         subreddit: comment.subreddit.display_name,
