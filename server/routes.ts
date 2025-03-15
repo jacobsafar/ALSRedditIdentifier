@@ -128,23 +128,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
+      console.log(`Fetching content from ${subreddits.length} subreddits`);
       let totalProcessed = 0;
       const errors: string[] = [];
 
       for (const subreddit of subreddits) {
         if (!subreddit.isActive) continue;
+        console.log(`Processing subreddit: r/${subreddit.name}`);
 
         try {
           const posts = await redditClient.getNewPosts(subreddit.name);
+          console.log(`Found ${posts.length} posts in r/${subreddit.name}`);
           const comments = await redditClient.getNewComments(subreddit.name);
+          console.log(`Found ${comments.length} comments in r/${subreddit.name}`);
 
           for (const content of [...posts, ...comments]) {
             try {
+              console.log(`Analyzing content from ${content.author} in r/${subreddit.name}`);
               const analysis = await analyzeContent(
                 content.title + "\n" + content.content,
                 config.openAiPrompt
               );
 
+              console.log(`Content analysis score: ${analysis.score}, threshold: ${config.scoreThreshold}`);
               if (analysis.score >= config.scoreThreshold) {
                 const post = {
                   ...content,
@@ -156,15 +162,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
                 await storage.addPost(post);
                 totalProcessed++;
+                console.log(`Added post with score ${analysis.score}`);
               }
             } catch (error) {
               const errorMessage = error instanceof Error ? error.message : String(error);
               errors.push(`Failed to analyze content: ${errorMessage}`);
+              console.error(`Analysis error: ${errorMessage}`);
             }
           }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           errors.push(`Failed to fetch from r/${subreddit.name}: ${errorMessage}`);
+          console.error(`Subreddit fetch error: ${errorMessage}`);
         }
       }
 
@@ -180,6 +189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`General fetch error: ${errorMessage}`);
       res.status(500).json({ error: errorMessage });
     }
   });

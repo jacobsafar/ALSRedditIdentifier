@@ -25,6 +25,7 @@ export class RedditClient {
 
   async getNewPosts(subreddit: string, limit = 25) {
     try {
+      console.log(`Fetching posts from r/${subreddit}`);
       const posts = await this.client.getSubreddit(subreddit).getNew({ limit });
       return posts.map(post => ({
         postId: post.id,
@@ -37,12 +38,14 @@ export class RedditClient {
       }));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Reddit API error (posts): ${errorMessage}`);
       throw new Error(`Failed to fetch posts from r/${subreddit}: ${errorMessage}`);
     }
   }
 
   async getNewComments(subreddit: string, limit = 25) {
     try {
+      console.log(`Fetching comments from r/${subreddit}`);
       const comments = await this.client.getSubreddit(subreddit).getNewComments({ limit });
       return comments.map(comment => ({
         postId: comment.id,
@@ -55,6 +58,7 @@ export class RedditClient {
       }));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Reddit API error (comments): ${errorMessage}`);
       throw new Error(`Failed to fetch comments from r/${subreddit}: ${errorMessage}`);
     }
   }
