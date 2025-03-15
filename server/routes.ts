@@ -130,6 +130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Fetching content from ${subreddits.length} subreddits`);
       let totalProcessed = 0;
+      let totalAnalyzed = 0;
       const errors: string[] = [];
 
       for (const subreddit of subreddits) {
@@ -144,6 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           for (const content of [...posts, ...comments]) {
             try {
+              totalAnalyzed++;
               console.log(`Analyzing content from ${content.author} in r/${subreddit.name}`);
               const analysis = await analyzeContent(
                 content.title + "\n" + content.content,
@@ -179,12 +181,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (errors.length > 0) {
         res.status(207).json({
-          message: `Processed ${totalProcessed} items with some errors`,
+          message: `Processed ${totalProcessed} out of ${totalAnalyzed} items`,
+          summary: `Found ${totalProcessed} relevant items above threshold`,
           errors
         });
       } else {
         res.status(200).json({
-          message: `Successfully processed ${totalProcessed} items`
+          message: `Successfully processed ${totalProcessed} out of ${totalAnalyzed} items`,
+          summary: `Found ${totalProcessed} relevant items above threshold`
         });
       }
     } catch (error) {

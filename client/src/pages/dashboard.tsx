@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, RefreshCw } from "lucide-react";
+import { Settings, RefreshCw, Loader2 } from "lucide-react";
 import PostCard from "@/components/post-card";
 import type { MonitoredPost } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
@@ -13,6 +13,7 @@ import { queryClient } from "@/lib/queryClient";
 export default function Dashboard() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("pending");
+  const [fetchStatus, setFetchStatus] = useState("");
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ["/api/posts", activeTab],
@@ -20,10 +21,39 @@ export default function Dashboard() {
   });
 
   const fetchMutation = useMutation({
-    mutationFn: () => fetch("/api/fetch", { method: "POST" }),
-    onSuccess: () => {
+    mutationFn: async () => {
+      setFetchStatus("Initializing content fetch...");
+      const response = await fetch("/api/fetch", { method: "POST" });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch content");
+      }
+
+      return data;
+    },
+    onMutate: () => {
+      toast({ title: "Starting content fetch", description: "This may take a few moments..." });
+    },
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-      toast({ title: "Content fetched successfully" });
+
+      if (data.errors?.length > 0) {
+        toast({ 
+          title: `Processed ${data.message}`,
+          description: "Some errors occurred during processing. Check the logs for details.",
+          variant: "warning"
+        });
+      } else {
+        toast({ 
+          title: "Content fetch complete",
+          description: data.message,
+          variant: "success"
+        });
+      }
+
+      // Clear the status after a delay
+      setTimeout(() => setFetchStatus(""), 3000);
     },
     onError: (error: Error) => {
       toast({ 
@@ -31,6 +61,7 @@ export default function Dashboard() {
         description: error.message,
         variant: "destructive"
       });
+      setFetchStatus("");
     }
   });
 
@@ -43,8 +74,12 @@ export default function Dashboard() {
             onClick={() => fetchMutation.mutate()}
             disabled={fetchMutation.isPending}
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Fetch New Content
+            {fetchMutation.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            {fetchMutation.isPending ? "Fetching..." : "Fetch New Content"}
           </Button>
           <Link href="/settings">
             <Button variant="outline">
@@ -54,6 +89,16 @@ export default function Dashboard() {
           </Link>
         </div>
       </div>
+
+      {/* Status message */}
+      {fetchStatus && (
+        <Card className="p-4 mb-6 bg-muted">
+          <p className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {fetchStatus}
+          </p>
+        </Card>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3 mb-6">
