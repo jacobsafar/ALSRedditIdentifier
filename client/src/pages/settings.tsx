@@ -17,26 +17,38 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { configSchema, insertSubredditSchema } from "@shared/schema";
 import type { Config, MonitoredSubreddit } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Loader2 } from "lucide-react";
 import { Link } from "wouter";
+import React from 'react';
 
 export default function Settings() {
   const { toast } = useToast();
 
-  const { data: config } = useQuery({
+  const { data: config, isLoading: isConfigLoading } = useQuery({
     queryKey: ["/api/config"],
     queryFn: () => fetch("/api/config").then(r => r.json())
   });
 
-  const { data: subreddits } = useQuery({
+  const { data: subreddits, isLoading: isSubredditsLoading } = useQuery({
     queryKey: ["/api/subreddits"],
     queryFn: () => fetch("/api/subreddits").then(r => r.json())
   });
 
   const configForm = useForm<Config>({
     resolver: zodResolver(configSchema),
-    defaultValues: config
+    defaultValues: {
+      scoreThreshold: 7,
+      checkFrequency: 60,
+      openAiPrompt: "",
+    }
   });
+
+  // Update form values when config is loaded
+  React.useEffect(() => {
+    if (config) {
+      configForm.reset(config);
+    }
+  }, [config]);
 
   const subredditForm = useForm({
     resolver: zodResolver(insertSubredditSchema),
@@ -91,55 +103,61 @@ export default function Settings() {
             <h2 className="text-2xl font-bold">Monitor Configuration</h2>
           </CardHeader>
           <CardContent>
-            <Form {...configForm}>
-              <form onSubmit={configForm.handleSubmit(data => updateConfigMutation.mutate(data))} className="space-y-4">
-                <FormField
-                  control={configForm.control}
-                  name="scoreThreshold"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Minimum Score Threshold (1-10)</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            {isConfigLoading ? (
+              <div className="flex items-center justify-center p-6">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <Form {...configForm}>
+                <form onSubmit={configForm.handleSubmit(data => updateConfigMutation.mutate(data))} className="space-y-4">
+                  <FormField
+                    control={configForm.control}
+                    name="scoreThreshold"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Minimum Score Threshold (1-10)</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={configForm.control}
-                  name="checkFrequency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Check Frequency (seconds)</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={configForm.control}
+                    name="checkFrequency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Check Frequency (seconds)</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={configForm.control}
-                  name="openAiPrompt"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>OpenAI System Prompt</FormLabel>
-                      <FormControl>
-                        <Textarea {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={configForm.control}
+                    name="openAiPrompt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>OpenAI System Prompt</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <Button type="submit" disabled={updateConfigMutation.isPending}>
-                  Save Configuration
-                </Button>
-              </form>
-            </Form>
+                  <Button type="submit" disabled={updateConfigMutation.isPending}>
+                    Save Configuration
+                  </Button>
+                </form>
+              </Form>
+            )}
           </CardContent>
         </Card>
 
@@ -169,21 +187,27 @@ export default function Settings() {
               </form>
             </Form>
 
-            <div className="space-y-2">
-              {subreddits?.map((subreddit: MonitoredSubreddit) => (
-                <div key={subreddit.id} className="flex items-center justify-between p-2 bg-muted rounded">
-                  <span>r/{subreddit.name}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeSubredditMutation.mutate(subreddit.id)}
-                    disabled={removeSubredditMutation.isPending}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+            {isSubredditsLoading ? (
+              <div className="flex items-center justify-center p-6">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {subreddits?.map((subreddit: MonitoredSubreddit) => (
+                  <div key={subreddit.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                    <span>r/{subreddit.name}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeSubredditMutation.mutate(subreddit.id)}
+                      disabled={removeSubredditMutation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
