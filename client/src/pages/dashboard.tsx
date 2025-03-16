@@ -12,6 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +29,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Settings, RefreshCw, Loader2, Trash2, Ban, Filter } from "lucide-react";
+import { Settings, RefreshCw, Loader2, Trash2, Ban, Filter, CalendarIcon, X } from "lucide-react";
+import { format } from "date-fns";
 import PostCard from "@/components/post-card";
 import type { MonitoredPost } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
@@ -33,6 +40,13 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("pending");
   const [fetchStatus, setFetchStatus] = useState("");
   const [selectedSubreddit, setSelectedSubreddit] = useState<string>("all");
+  const [dateRange, setDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({
+    from: undefined,
+    to: undefined,
+  });
 
   // Get config for auto-fetch interval
   const { data: config } = useQuery({
@@ -62,10 +76,30 @@ export default function Dashboard() {
   // Extract unique subreddits from posts
   const uniqueSubreddits = Array.from(new Set(posts?.map((post: MonitoredPost) => post.subreddit) || [])).sort();
 
-  // Filter posts based on selected subreddit
-  const filteredPosts = selectedSubreddit === "all"
-    ? posts
-    : posts?.filter((post: MonitoredPost) => post.subreddit === selectedSubreddit);
+  // Filter posts based on selected subreddit and date range
+  const filteredPosts = posts?.filter((post: MonitoredPost) => {
+    // Filter by subreddit if one is selected
+    if (selectedSubreddit !== "all" && post.subreddit !== selectedSubreddit) {
+      return false;
+    }
+
+    // Filter by date range if set
+    if (dateRange.from || dateRange.to) {
+      const postDate = new Date(post.timestamp);
+      if (dateRange.from && postDate < dateRange.from) {
+        return false;
+      }
+      if (dateRange.to) {
+        const endOfDay = new Date(dateRange.to);
+        endOfDay.setHours(23, 59, 59, 999);
+        if (postDate > endOfDay) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  });
 
   // Sort posts based on active tab and criteria
   const sortedPosts = filteredPosts?.sort((a: MonitoredPost, b: MonitoredPost) => {
@@ -87,6 +121,12 @@ export default function Dashboard() {
   const normalPriorityPosts = activeTab === "pending"
     ? sortedPosts?.filter((post: MonitoredPost) => post.score < 8)
     : sortedPosts;
+
+  // Reset filters
+  const resetFilters = () => {
+    setSelectedSubreddit("all");
+    setDateRange({ from: undefined, to: undefined });
+  };
 
   const fetchMutation = useMutation({
     mutationFn: async () => {
@@ -260,23 +300,75 @@ export default function Dashboard() {
           <TabsTrigger value="ignored">Ignored</TabsTrigger>
         </TabsList>
 
-        {/* Subreddit Filter - Only show on pending tab */}
-        {activeTab === "pending" && uniqueSubreddits.length > 0 && (
-          <div className="flex items-center gap-2 mb-4">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={selectedSubreddit} onValueChange={setSelectedSubreddit}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filter by subreddit" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Subreddits</SelectItem>
-                {uniqueSubreddits.map(subreddit => (
-                  <SelectItem key={subreddit} value={subreddit}>
-                    r/{subreddit}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Filters Section - Show on all tabs */}
+        {uniqueSubreddits.length > 0 && (
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={selectedSubreddit} onValueChange={setSelectedSubreddit}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Filter by subreddit" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Subreddits</SelectItem>
+                  {uniqueSubreddits.map(subreddit => (
+                    <SelectItem key={subreddit} value={subreddit}>
+                      r/{subreddit}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={dateRange.from ? "text-primary" : ""}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "LLL dd, y")} -{" "}
+                          {format(dateRange.to, "LLL dd, y")}
+                        </>
+                      ) : (
+                        format(dateRange.from, "LLL dd, y")
+                      )
+                    ) : (
+                      "Filter by date"
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    selected={{ 
+                      from: dateRange.from,
+                      to: dateRange.to 
+                    }}
+                    onSelect={(range: any) => setDateRange(range)}
+                    numberOfMonths={2}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Reset Filters Button */}
+            {(selectedSubreddit !== "all" || dateRange.from) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetFilters}
+                className="h-8 px-2"
+              >
+                <X className="h-4 w-4" />
+                Reset filters
+              </Button>
+            )}
           </div>
         )}
 
@@ -336,6 +428,7 @@ export default function Dashboard() {
               <Card className="p-6 text-center text-muted-foreground">
                 No {activeTab} posts found
                 {selectedSubreddit !== "all" && " in r/" + selectedSubreddit}
+                {dateRange.from && ` between ${format(dateRange.from, "LLL dd, y")} and ${format(dateRange.to || dateRange.from, "LLL dd, y")}`}
               </Card>
             )}
           </div>
