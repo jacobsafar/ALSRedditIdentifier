@@ -265,6 +265,7 @@ export default function PostCard({ post }: PostCardProps) {
               Ignore Post
             </Button>
             <Button
+              variant="outline"
               onClick={() => updateStatusMutation.mutate("replied")}
               disabled={updateStatusMutation.isPending}
             >
