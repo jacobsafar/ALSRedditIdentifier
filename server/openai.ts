@@ -2,6 +2,7 @@ import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 export async function analyzeContent(
   text: string,
   systemPrompt: string,
@@ -11,14 +12,17 @@ export async function analyzeContent(
   suggestedReply: string;
 }> {
   try {
-    // Add JSON requirement to system prompt if not already present
-    const jsonSystemPrompt = systemPrompt.includes("json")
-      ? systemPrompt
-      : systemPrompt +
-        "\nRespond with a JSON object in the following format: { 'score': number between 1-10, 'analysis': string, 'suggestedReply': string }";
+    // Ensure the prompt requests JSON format
+    const jsonSystemPrompt = `${systemPrompt.trim()}
+Please analyze the following text and respond with a JSON object containing:
+{
+  "score": number between 1-10,
+  "analysis": string explaining your scoring rationale,
+  "suggestedReply": string containing a proposed response
+}`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -29,10 +33,22 @@ export async function analyzeContent(
           content: text,
         },
       ],
+      response_format: { type: "json_object" }
     });
 
-    const content = response.choices[0].message.content || "{}";
+    const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error("Empty response from OpenAI");
+    }
+
     const result = JSON.parse(content);
+
+    // Validate the response structure
+    if (typeof result.score !== 'number' || 
+        typeof result.analysis !== 'string' || 
+        typeof result.suggestedReply !== 'string') {
+      throw new Error("Invalid response format from OpenAI");
+    }
 
     return {
       score: Math.max(1, Math.min(10, Math.round(result.score))),
@@ -40,8 +56,13 @@ export async function analyzeContent(
       suggestedReply: result.suggestedReply || "No reply suggested",
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to analyze content: ${errorMessage}`);
+    if (error instanceof Error) {
+      if (error.message.includes("JSON")) {
+        throw new Error("Failed to parse OpenAI response as JSON. Please check the system prompt format.");
+      }
+      throw new Error(`Failed to analyze content: ${error.message}`);
+    }
+    throw new Error("An unknown error occurred during content analysis");
   }
 }
 
@@ -54,7 +75,7 @@ export async function regenerateReply(
       "You are an AI assistant generating a courteous and factual reply to a Reddit comment or post about AI technology. Generate a 1-2 sentence response that addresses their concerns and provides accurate information.";
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o", // Updated to use the latest model
       messages: [
         {
           role: "system",
@@ -67,7 +88,12 @@ export async function regenerateReply(
       ],
     });
 
-    return response.choices[0].message.content || "No reply generated";
+    const reply = response.choices[0].message.content;
+    if (!reply) {
+      throw new Error("Empty response from OpenAI");
+    }
+
+    return reply;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to generate reply: ${errorMessage}`);
