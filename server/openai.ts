@@ -22,7 +22,7 @@ Please analyze the following text and respond with a JSON object containing:
 }`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -75,7 +75,7 @@ export async function regenerateReply(
       "You are an AI assistant generating a courteous and factual reply to a Reddit comment or post about AI technology. Generate a 1-2 sentence response that addresses their concerns and provides accurate information.";
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Updated to use the latest model
+      model: "gpt-4o", // Updated to use the latest model
       messages: [
         {
           role: "system",
@@ -86,6 +86,8 @@ export async function regenerateReply(
           content: text,
         },
       ],
+      temperature: 0.7, // Add some variation to responses
+      max_tokens: 150, // Limit response length
     });
 
     const reply = response.choices[0].message.content;
@@ -93,7 +95,7 @@ export async function regenerateReply(
       throw new Error("Empty response from OpenAI");
     }
 
-    return reply;
+    return reply.trim();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to generate reply: ${errorMessage}`);
