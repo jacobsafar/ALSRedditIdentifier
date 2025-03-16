@@ -204,6 +204,16 @@ export default function Dashboard() {
     }
   });
 
+  // Helper function to get sort option label based on active tab
+  const getSortLabel = (type: 'latest' | 'oldest') => {
+    if (activeTab === 'replied') {
+      return type === 'latest' ? "Latest Replies First" : "Oldest Replies First";
+    } else if (activeTab === 'ignored') {
+      return type === 'latest' ? "Latest Ignored First" : "Oldest Ignored First";
+    }
+    return ""; //should not happen but added for safety
+  };
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -340,8 +350,8 @@ export default function Dashboard() {
                     </>
                   ) : (
                     <>
-                      <SelectItem value="newest">Latest Actions First</SelectItem>
-                      <SelectItem value="oldest">Oldest Actions First</SelectItem>
+                      <SelectItem value="newest">{getSortLabel('latest')}</SelectItem>
+                      <SelectItem value="oldest">{getSortLabel('oldest')}</SelectItem>
                       <SelectItem value="post_date_newest">Post Date (Newest)</SelectItem>
                       <SelectItem value="post_date_oldest">Post Date (Oldest)</SelectItem>
                       <SelectItem value="score_desc">Highest Score First</SelectItem>
