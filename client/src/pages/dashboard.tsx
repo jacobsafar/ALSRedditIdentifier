@@ -76,7 +76,7 @@ export default function Dashboard() {
   });
 
   // Sort posts based on active tab and criteria
-  const sortedPosts = filteredPosts?.sort((a: MonitoredPost, b: MonitoredPost) => {
+  const sortedPosts = [...(filteredPosts || [])].sort((a: MonitoredPost, b: MonitoredPost) => {
     switch (sortOrder) {
       case "score_desc":
         return b.score - a.score;
@@ -90,14 +90,6 @@ export default function Dashboard() {
         return 0;
     }
   });
-
-  // Separate high-priority posts (only for pending tab)
-  const highPriorityPosts = activeTab === "pending"
-    ? sortedPosts?.filter((post: MonitoredPost) => post.score >= 8)
-    : [];
-  const normalPriorityPosts = activeTab === "pending"
-    ? sortedPosts?.filter((post: MonitoredPost) => post.score < 8)
-    : sortedPosts;
 
   // Reset filters
   const resetFilters = () => {
@@ -354,7 +346,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Normal Priority Section */}
+            {/* Normal Priority/Replied/Ignored Section */}
             {sortedPosts?.filter(post => activeTab !== "pending" || post.score < 8).length > 0 && (
               <div className="space-y-4">
                 {activeTab === "pending" ? (
