@@ -41,7 +41,8 @@ const generateSystemPrompt = (values: {
   const analysisGuidance = values.analysisGuidance?.trim() || "a brief explanation of why you gave this score";
   const replyStyle = values.replyStyle?.trim() || "a courteous and factual 1-2 sentence reply that addresses their concerns";
 
-  return `${basePrompt}
+  // Log generated prompt for debugging
+  const generatedPrompt = `${basePrompt}
 
 Please analyze the following text and respond with a JSON object containing:
 {
@@ -49,6 +50,9 @@ Please analyze the following text and respond with a JSON object containing:
   "analysis": ${analysisGuidance},
   "suggestedReply": ${replyStyle}
 }`;
+
+  console.log('Generated prompt:', generatedPrompt);
+  return generatedPrompt;
 };
 
 // Helper function to parse system prompt into form fields
@@ -66,16 +70,24 @@ const parseSystemPrompt = (prompt: string) => {
     // Extract the base prompt - everything before the JSON format instructions
     const basePromptMatch = prompt.split("Please analyze the following text")[0].trim();
 
-    // Extract other components using more precise patterns
-    const scoringMatch = prompt.match(/score":\s*number between 1-10 where\s*(.*?)(?=,|\})/);
-    const analysisMatch = prompt.match(/"analysis":\s*(.*?)(?=,|\})/);
-    const replyMatch = prompt.match(/"suggestedReply":\s*(.*?)(?=\})/);
+    // Extract components using clearer patterns that match the actual format
+    const scoringCriteria = prompt.match(/where\s+(.*?)(?=,|\})/)?.[1]?.trim();
+    const analysisMatch = prompt.match(/"analysis":\s*(.*?)(?=,|\})/)?.[1]?.trim();
+    const replyMatch = prompt.match(/"suggestedReply":\s*(.*?)(?=\})/)?.[1]?.trim();
+
+    // Log parsed values for debugging
+    console.log('Parsed values:', {
+      basePrompt: basePromptMatch,
+      scoringCriteria,
+      analysis: analysisMatch,
+      reply: replyMatch
+    });
 
     return {
       basePrompt: basePromptMatch || defaultValues.basePrompt,
-      scoringCriteria: scoringMatch?.[1]?.trim() || defaultValues.scoringCriteria,
-      analysisGuidance: analysisMatch?.[1]?.trim() || defaultValues.analysisGuidance,
-      replyStyle: replyMatch?.[1]?.trim() || defaultValues.replyStyle,
+      scoringCriteria: scoringCriteria || defaultValues.scoringCriteria,
+      analysisGuidance: analysisMatch || defaultValues.analysisGuidance,
+      replyStyle: replyMatch || defaultValues.replyStyle,
     };
   } catch (error) {
     console.error('Error parsing system prompt:', error);
@@ -156,8 +168,10 @@ export default function Settings() {
       replyStyle: string;
     }) => {
       try {
+        console.log('Form data before generating prompt:', data);
         // Generate the system prompt from the form fields
         const systemPrompt = generateSystemPrompt(data);
+        console.log('Generated system prompt:', systemPrompt);
 
         // Send only the Config fields to the API
         const configData: Config = {
@@ -176,7 +190,7 @@ export default function Settings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/config"] });
       toast({ title: "Settings updated successfully" });
-      // Do not reset the form here
+      // Do not reset the form here as it will clear user input
     },
     onError: (error: Error) => {
       toast({
