@@ -12,8 +12,15 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { configSchema, insertSubredditSchema } from "@shared/schema";
 import type { Config, MonitoredSubreddit } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -21,6 +28,48 @@ import { ArrowLeft, Plus, Trash2, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import React from 'react';
 import { queryClient } from "@/lib/queryClient";
+
+// Helper function to generate system prompt from form fields
+const generateSystemPrompt = (values: {
+  basePrompt: string;
+  scoringCriteria: string;
+  analysisGuidance: string;
+  replyStyle: string;
+}) => {
+  return `${values.basePrompt.trim()}
+
+Please analyze the following text and respond with a JSON object containing:
+{
+  "score": number between 1-10 where ${values.scoringCriteria.trim()},
+  "analysis": ${values.analysisGuidance.trim()},
+  "suggestedReply": ${values.replyStyle.trim()}
+}`;
+};
+
+// Helper function to parse system prompt into form fields
+const parseSystemPrompt = (prompt: string) => {
+  const defaultValues = {
+    basePrompt: "You are an AI assistant analyzing Reddit content for sentiment about AI technology.",
+    scoringCriteria: "10 indicates high relevance and strong negative sentiment about AI",
+    analysisGuidance: "a brief explanation of why you gave this score",
+    replyStyle: "a courteous and factual 1-2 sentence reply that addresses their concerns"
+  };
+
+  if (!prompt) return defaultValues;
+
+  // Try to extract values from the prompt
+  const basePromptMatch = prompt.match(/^(.*?)(?=\n\nPlease analyze)/s);
+  const scoringMatch = prompt.match(/"score":\s*number between 1-10 where\s*(.*?)(?=,)/);
+  const analysisMatch = prompt.match(/"analysis":\s*(.*?)(?=,)/);
+  const replyMatch = prompt.match(/"suggestedReply":\s*(.*?)(?=\n*})/);
+
+  return {
+    basePrompt: basePromptMatch?.[1]?.trim() || defaultValues.basePrompt,
+    scoringCriteria: scoringMatch?.[1]?.trim() || defaultValues.scoringCriteria,
+    analysisGuidance: analysisMatch?.[1]?.trim() || defaultValues.analysisGuidance,
+    replyStyle: replyMatch?.[1]?.trim() || defaultValues.replyStyle,
+  };
+};
 
 export default function Settings() {
   const { toast } = useToast();
@@ -35,20 +84,33 @@ export default function Settings() {
     queryFn: () => fetch("/api/subreddits").then(r => r.json())
   });
 
-  const configForm = useForm<Config>({
+  const configForm = useForm<Config & {
+    basePrompt: string;
+    scoringCriteria: string;
+    analysisGuidance: string;
+    replyStyle: string;
+  }>({
     resolver: zodResolver(configSchema),
     defaultValues: {
       scoreThreshold: 7,
       checkFrequency: 60,
       postsPerFetch: 25,
       openAiPrompt: "",
+      basePrompt: "",
+      scoringCriteria: "",
+      analysisGuidance: "",
+      replyStyle: "",
     }
   });
 
   // Update form values when config is loaded
   React.useEffect(() => {
     if (config) {
-      configForm.reset(config);
+      const promptFields = parseSystemPrompt(config.openAiPrompt);
+      configForm.reset({
+        ...config,
+        ...promptFields
+      });
     }
   }, [config]);
 
@@ -61,8 +123,26 @@ export default function Settings() {
   });
 
   const updateConfigMutation = useMutation({
-    mutationFn: (config: Config) =>
-      apiRequest("PUT", "/api/config", config),
+    mutationFn: (data: Config & {
+      basePrompt: string;
+      scoringCriteria: string;
+      analysisGuidance: string;
+      replyStyle: string;
+    }) => {
+      // Generate the system prompt from the form fields
+      const systemPrompt = generateSystemPrompt({
+        basePrompt: data.basePrompt,
+        scoringCriteria: data.scoringCriteria,
+        analysisGuidance: data.analysisGuidance,
+        replyStyle: data.replyStyle
+      });
+
+      // Send the complete config with the generated system prompt
+      return apiRequest("PUT", "/api/config", {
+        ...data,
+        openAiPrompt: systemPrompt
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/config"] });
       toast({ title: "Settings updated successfully" });
@@ -150,9 +230,9 @@ export default function Settings() {
                           />
                         </FormControl>
                         <FormMessage />
-                        <p className="text-sm text-muted-foreground">
+                        <FormDescription>
                           How often to check for new content (0.5 to 12 hours)
-                        </p>
+                        </FormDescription>
                       </FormItem>
                     )}
                   />
@@ -172,26 +252,105 @@ export default function Settings() {
                           />
                         </FormControl>
                         <FormMessage />
-                        <p className="text-sm text-muted-foreground">
+                        <FormDescription>
                           Number of posts and comments to fetch from each subreddit (5-100)
-                        </p>
+                        </FormDescription>
                       </FormItem>
                     )}
                   />
 
-                  <FormField
-                    control={configForm.control}
-                    name="openAiPrompt"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>OpenAI System Prompt</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="ai-settings">
+                      <AccordionTrigger className="text-lg font-semibold">
+                        AI Analysis Settings
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4 pt-4">
+                        <FormField
+                          control={configForm.control}
+                          name="basePrompt"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>AI Assistant Role</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Define the AI assistant's role and context..."
+                                  className="min-h-[100px]"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Describe the role and context for the AI assistant
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={configForm.control}
+                          name="scoringCriteria"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Scoring Criteria</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Define what different scores mean..."
+                                  className="min-h-[100px]"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Explain how the 1-10 score should be determined
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={configForm.control}
+                          name="analysisGuidance"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Analysis Guidelines</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Specify what the analysis should include..."
+                                  className="min-h-[100px]"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Define what aspects should be included in the content analysis
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={configForm.control}
+                          name="replyStyle"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Reply Style Guidelines</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Define how replies should be formatted..."
+                                  className="min-h-[100px]"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Specify the tone, length, and style for suggested replies
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
 
                   <Button type="submit" disabled={updateConfigMutation.isPending}>
                     {updateConfigMutation.isPending ? (
