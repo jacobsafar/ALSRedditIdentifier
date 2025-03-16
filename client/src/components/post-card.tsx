@@ -267,6 +267,15 @@ export default function PostCard({ post }: PostCardProps) {
       {post.status === "pending" && (
         <CardFooter className="flex justify-end gap-2">
           <Button
+            size="sm"
+            onClick={copyAndMarkReplied}
+            disabled={updateStatusMutation.isPending}
+            className="bg-blue-600 text-white hover:bg-blue-700"
+          >
+            Copy & Open in Reddit
+            <ExternalLink className="ml-2 h-4 w-4" />
+          </Button>
+          <Button
             onClick={() => updateStatusMutation.mutate("replied")}
             disabled={updateStatusMutation.isPending}
           >
@@ -280,15 +289,6 @@ export default function PostCard({ post }: PostCardProps) {
           >
             <X className="mr-2 h-4 w-4" />
             Ignore Post
-          </Button>
-          <Button
-            size="sm"
-            onClick={copyAndMarkReplied}
-            disabled={updateStatusMutation.isPending}
-            className="bg-blue-600 text-white hover:bg-blue-700"
-          >
-            Copy & Open in Reddit
-            <ExternalLink className="ml-2 h-4 w-4" />
           </Button>
         </CardFooter>
       )}
