@@ -43,9 +43,11 @@ export default function PostCard({ post }: PostCardProps) {
   const regenerateReplyMutation = useMutation({
     mutationFn: (prompt: string) =>
       apiRequest("POST", `/api/posts/${post.id}/regenerate-reply`, { customPrompt: prompt }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       setIsDialogOpen(false);
+      // Update the editedReply state with the new reply
+      setEditedReply(data.suggestedReply);
       toast({ title: "Reply regenerated successfully" });
     },
     onError: (error: Error) => {
@@ -265,6 +267,13 @@ export default function PostCard({ post }: PostCardProps) {
       {post.status === "pending" && (
         <CardFooter className="flex justify-end gap-2">
           <Button
+            onClick={() => updateStatusMutation.mutate("replied")}
+            disabled={updateStatusMutation.isPending}
+          >
+            <Check className="mr-2 h-4 w-4" />
+            Mark as Replied
+          </Button>
+          <Button
             variant="outline"
             onClick={() => updateStatusMutation.mutate("ignored")}
             disabled={updateStatusMutation.isPending}
@@ -273,11 +282,13 @@ export default function PostCard({ post }: PostCardProps) {
             Ignore Post
           </Button>
           <Button
-            onClick={() => updateStatusMutation.mutate("replied")}
+            size="sm"
+            onClick={copyAndMarkReplied}
             disabled={updateStatusMutation.isPending}
+            className="bg-blue-600 text-white hover:bg-blue-700"
           >
-            <Check className="mr-2 h-4 w-4" />
-            Mark as Replied
+            Copy & Open in Reddit
+            <ExternalLink className="ml-2 h-4 w-4" />
           </Button>
         </CardFooter>
       )}
