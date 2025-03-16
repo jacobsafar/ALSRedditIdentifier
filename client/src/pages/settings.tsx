@@ -20,6 +20,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { ArrowLeft, Plus, Trash2, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import React from 'react';
+import { queryClient } from "@/lib/queryClient";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -39,6 +40,7 @@ export default function Settings() {
     defaultValues: {
       scoreThreshold: 7,
       checkFrequency: 60,
+      postsPerFetch: 25,
       openAiPrompt: "",
     }
   });
@@ -59,10 +61,18 @@ export default function Settings() {
   });
 
   const updateConfigMutation = useMutation({
-    mutationFn: (config: Config) => 
+    mutationFn: (config: Config) =>
       apiRequest("PUT", "/api/config", config),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/config"] });
       toast({ title: "Settings updated successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Failed to update settings",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   });
 
@@ -117,7 +127,7 @@ export default function Settings() {
                       <FormItem>
                         <FormLabel>Minimum Score Threshold (1-10)</FormLabel>
                         <FormControl>
-                          <Input type="number" {...field} />
+                          <Input type="number" min={1} max={10} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -131,9 +141,31 @@ export default function Settings() {
                       <FormItem>
                         <FormLabel>Check Frequency (seconds)</FormLabel>
                         <FormControl>
-                          <Input type="number" {...field} />
+                          <Input type="number" min={30} max={300} {...field} />
                         </FormControl>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={configForm.control}
+                    name="postsPerFetch"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Posts to Fetch per Subreddit</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={5}
+                            max={100}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                        <p className="text-sm text-muted-foreground">
+                          Number of posts and comments to fetch from each subreddit (5-100)
+                        </p>
                       </FormItem>
                     )}
                   />
@@ -153,6 +185,9 @@ export default function Settings() {
                   />
 
                   <Button type="submit" disabled={updateConfigMutation.isPending}>
+                    {updateConfigMutation.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
                     Save Configuration
                   </Button>
                 </form>

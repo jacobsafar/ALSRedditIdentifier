@@ -138,9 +138,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Processing subreddit: r/${subreddit.name}`);
 
         try {
-          const posts = await redditClient.getNewPosts(subreddit.name);
+          const posts = await redditClient.getNewPosts(subreddit.name, config.postsPerFetch);
           console.log(`Found ${posts.length} posts in r/${subreddit.name}`);
-          const comments = await redditClient.getNewComments(subreddit.name);
+          const comments = await redditClient.getNewComments(subreddit.name, config.postsPerFetch);
           console.log(`Found ${comments.length} comments in r/${subreddit.name}`);
 
           for (const content of [...posts, ...comments]) {

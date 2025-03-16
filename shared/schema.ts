@@ -48,8 +48,9 @@ export type MonitoredSubreddit = typeof monitoredSubreddits.$inferSelect;
 export type MonitoredPost = typeof monitoredPosts.$inferSelect;
 
 export const configSchema = z.object({
-  scoreThreshold: z.number().min(1).max(10),
-  checkFrequency: z.number().min(30).max(300),
+  scoreThreshold: z.coerce.number().min(1).max(10),
+  checkFrequency: z.coerce.number().min(30).max(300),
+  postsPerFetch: z.coerce.number().min(5).max(100),
   openAiPrompt: z.string().min(10),
 });
 
