@@ -16,10 +16,10 @@ import {
 } from "@/components/ui/form";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
+  // Accordion,
+  // AccordionContent,
+  // AccordionItem,
+  // AccordionTrigger,
 } from "@/components/ui/accordion";
 import { configSchema, insertSubredditSchema } from "@shared/schema";
 import type { Config, MonitoredSubreddit } from "@shared/schema";
@@ -42,7 +42,6 @@ const generateSystemPrompt = (values: {
   const replyStyle = values.replyStyle?.trim() || "a courteous and factual 1-2 sentence reply that addresses their concerns";
 
   return `${basePrompt}
-
 Please analyze the following text and respond with a JSON object containing:
 {
   "score": number between 1-10 where ${scoringCriteria},
@@ -232,160 +231,157 @@ export default function Settings() {
               </div>
             ) : (
               <Form {...configForm}>
-                <form onSubmit={configForm.handleSubmit(data => updateConfigMutation.mutate(data))} className="space-y-4">
-                  <FormField
-                    control={configForm.control}
-                    name="scoreThreshold"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Minimum Score Threshold (1-10)</FormLabel>
-                        <FormControl>
-                          <Input type="number" min={1} max={10} {...field} onChange={e => field.onChange(Number(e.target.value))} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <form onSubmit={configForm.handleSubmit(data => updateConfigMutation.mutate(data))} className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">General Settings</h3>
+                    <FormField
+                      control={configForm.control}
+                      name="scoreThreshold"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Minimum Score Threshold (1-10)</FormLabel>
+                          <FormControl>
+                            <Input type="number" min={1} max={10} {...field} onChange={e => field.onChange(Number(e.target.value))} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={configForm.control}
-                    name="checkFrequency"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Check Frequency (hours)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            min={0.5} 
-                            max={12} 
-                            step={0.5}
-                            {...field}
-                            onChange={e => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                        <FormDescription>
-                          How often to check for new content (0.5 to 12 hours)
-                        </FormDescription>
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={configForm.control}
+                      name="checkFrequency"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Check Frequency (hours)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min={0.5} 
+                              max={12} 
+                              step={0.5}
+                              {...field}
+                              onChange={e => field.onChange(Number(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                          <FormDescription>
+                            How often to check for new content (0.5 to 12 hours)
+                          </FormDescription>
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={configForm.control}
-                    name="postsPerFetch"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Posts to Fetch per Subreddit</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={5}
-                            max={100}
-                            {...field}
-                            onChange={e => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                        <FormDescription>
-                          Number of posts and comments to fetch from each subreddit (5-100)
-                        </FormDescription>
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={configForm.control}
+                      name="postsPerFetch"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Posts to Fetch per Subreddit</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={5}
+                              max={100}
+                              {...field}
+                              onChange={e => field.onChange(Number(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                          <FormDescription>
+                            Number of posts and comments to fetch from each subreddit (5-100)
+                          </FormDescription>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                  <Accordion type="single" collapsible className="w-full">
-                    <AccordionItem value="ai-settings">
-                      <AccordionTrigger className="text-lg font-semibold">
-                        AI Analysis Settings
-                      </AccordionTrigger>
-                      <AccordionContent className="space-y-4 pt-4">
-                        <FormField
-                          control={configForm.control}
-                          name="basePrompt"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>AI Assistant Role</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  placeholder="Define the AI assistant's role and context..."
-                                  className="min-h-[100px]"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                Describe the role and context for the AI assistant
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                  <div className="space-y-4 pt-6 border-t">
+                    <h3 className="text-lg font-semibold">AI Analysis Settings</h3>
+                    <FormField
+                      control={configForm.control}
+                      name="basePrompt"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>AI Assistant Role</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Define the AI assistant's role and context..."
+                              className="min-h-[100px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Describe the role and context for the AI assistant
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                        <FormField
-                          control={configForm.control}
-                          name="scoringCriteria"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Scoring Criteria</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  placeholder="Define what different scores mean..."
-                                  className="min-h-[100px]"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                Explain how the 1-10 score should be determined
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                    <FormField
+                      control={configForm.control}
+                      name="scoringCriteria"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Scoring Criteria</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Define what different scores mean..."
+                              className="min-h-[100px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Explain how the 1-10 score should be determined
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                        <FormField
-                          control={configForm.control}
-                          name="analysisGuidance"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Analysis Guidelines</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  placeholder="Specify what the analysis should include..."
-                                  className="min-h-[100px]"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                Define what aspects should be included in the content analysis
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                    <FormField
+                      control={configForm.control}
+                      name="analysisGuidance"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Analysis Guidelines</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Specify what the analysis should include..."
+                              className="min-h-[100px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Define what aspects should be included in the content analysis
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                        <FormField
-                          control={configForm.control}
-                          name="replyStyle"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Reply Style Guidelines</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  placeholder="Define how replies should be formatted..."
-                                  className="min-h-[100px]"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                Specify the tone, length, and style for suggested replies
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
+                    <FormField
+                      control={configForm.control}
+                      name="replyStyle"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Reply Style Guidelines</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Define how replies should be formatted..."
+                              className="min-h-[100px]"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Specify the tone, length, and style for suggested replies
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <Button type="submit" disabled={updateConfigMutation.isPending}>
                     {updateConfigMutation.isPending ? (
