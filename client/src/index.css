@@ -11,3 +11,50 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Glow effects for different colors */
+  .shadow-glow-purple {
+    box-shadow: 0 0 15px rgba(147, 51, 234, 0.3);
+  }
+  .shadow-glow-red {
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+  }
+  .shadow-glow-orange {
+    box-shadow: 0 0 15px rgba(251, 146, 60, 0.3);
+  }
+  .shadow-glow-yellow {
+    box-shadow: 0 0 15px rgba(250, 204, 21, 0.3);
+  }
+  .shadow-glow-green {
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+  }
+
+  /* Soft glow effects for backgrounds */
+  .shadow-glow-soft-purple {
+    box-shadow: 0 4px 20px -5px rgba(147, 51, 234, 0.2);
+  }
+  .shadow-glow-soft-red {
+    box-shadow: 0 4px 20px -5px rgba(239, 68, 68, 0.2);
+  }
+  .shadow-glow-soft-orange {
+    box-shadow: 0 4px 20px -5px rgba(251, 146, 60, 0.2);
+  }
+  .shadow-glow-soft-green {
+    box-shadow: 0 4px 20px -5px rgba(34, 197, 94, 0.2);
+  }
+
+  /* Animation keyframes for glowing effects */
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 5px rgba(147, 51, 234, 0.2),
+                  0 0 10px rgba(147, 51, 234, 0.2),
+                  0 0 15px rgba(147, 51, 234, 0.2);
+    }
+    to {
+      box-shadow: 0 0 10px rgba(147, 51, 234, 0.3),
+                  0 0 20px rgba(147, 51, 234, 0.3),
+                  0 0 30px rgba(147, 51, 234, 0.3);
+    }
+  }
+}

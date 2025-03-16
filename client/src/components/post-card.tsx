@@ -92,27 +92,32 @@ export default function PostCard({ post }: PostCardProps) {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 9) return "bg-red-500 text-white";
-    if (score >= 7) return "bg-orange-500 text-white";
-    if (score >= 5) return "bg-yellow-500";
-    return "bg-green-500 text-white";
+    if (score >= 9) return "bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-glow-red";
+    if (score >= 7) return "bg-gradient-to-r from-orange-400 to-amber-500 text-white shadow-glow-orange";
+    if (score >= 5) return "bg-gradient-to-r from-yellow-400 to-amber-300 shadow-glow-yellow";
+    return "bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-glow-green";
   };
 
   const analysis = post.analysis as { analysis: string };
 
   return (
     <Card className={cn(
-      "transition-all duration-300 ease-in-out transform hover:scale-[1.01] hover:shadow-lg",
-      post.score >= 9 && "border-red-200 bg-red-50/50",
-      post.score >= 7 && post.score < 9 && "border-orange-200 bg-orange-50/50"
+      "transition-all duration-500 ease-in-out transform hover:scale-[1.02] hover:shadow-xl",
+      "bg-gradient-to-br from-white to-purple-50/30",
+      post.score >= 9 && "border-red-200 bg-gradient-to-br from-red-50 to-pink-50/30 shadow-glow-soft-red",
+      post.score >= 7 && post.score < 9 && "border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50/30 shadow-glow-soft-orange"
     )}>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold transition-colors duration-200 hover:text-primary">r/{post.subreddit}</h3>
-          <Badge className="transition-colors duration-200">{post.author}</Badge>
+          <h3 className="font-semibold transition-all duration-300 hover:text-primary hover:scale-105">
+            r/{post.subreddit}
+          </h3>
+          <Badge className="transition-all duration-300 bg-gradient-to-r from-violet-500 to-purple-500 hover:shadow-glow-purple">
+            {post.author}
+          </Badge>
           <Badge className={cn(
             getScoreColor(post.score),
-            "flex items-center gap-1 transition-all duration-200"
+            "flex items-center gap-1 transition-all duration-300"
           )}>
             {post.score >= 8 && <AlertTriangle className="h-3 w-3 animate-pulse" />}
             Score: {post.score}
@@ -125,7 +130,7 @@ export default function PostCard({ post }: PostCardProps) {
           href={post.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="hover:text-primary transition-colors duration-200"
+          className="hover:text-primary transition-all duration-300 hover:scale-110"
         >
           <ExternalLink className="h-4 w-4" />
         </a>
@@ -133,10 +138,10 @@ export default function PostCard({ post }: PostCardProps) {
 
       <CardContent className="space-y-4">
         {post.title && (
-          <div className="transition-all duration-200 ease-in-out">
+          <div className="transition-all duration-300 ease-in-out group">
             <h4 className="font-medium mb-1">Title</h4>
             <p className={cn(
-              "text-lg transition-colors duration-200",
+              "text-lg transition-all duration-300 group-hover:scale-[1.01]",
               post.score >= 8 && "font-semibold text-red-900"
             )}>{post.title}</p>
           </div>
@@ -144,13 +149,13 @@ export default function PostCard({ post }: PostCardProps) {
 
         <div>
           <h4 className="font-medium mb-1">Content</h4>
-          <p className="whitespace-pre-wrap transition-colors duration-200">{post.content}</p>
+          <p className="whitespace-pre-wrap transition-colors duration-300">{post.content}</p>
         </div>
 
         <div>
           <h4 className="font-medium mb-1">Analysis</h4>
           <p className={cn(
-            "text-muted-foreground transition-colors duration-200",
+            "text-muted-foreground transition-colors duration-300",
             post.score >= 8 && "text-red-700"
           )}>{analysis.analysis}</p>
         </div>
@@ -165,7 +170,7 @@ export default function PostCard({ post }: PostCardProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="transition-all duration-200 hover:bg-muted/80"
+                      className="transition-all duration-300 hover:bg-muted/80 hover:shadow-md"
                     >
                       <RefreshCw className="mr-2 h-4 w-4" />
                       Regenerate Reply
@@ -202,7 +207,7 @@ export default function PostCard({ post }: PostCardProps) {
                   size="sm"
                   onClick={copyAndMarkReplied}
                   disabled={updateStatusMutation.isPending}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-[1px]"
+                  className="bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:shadow-glow-purple transition-all duration-300 transform hover:-translate-y-1"
                 >
                   Copy & Open in Reddit
                   <ExternalLink className="ml-2 h-4 w-4" />
@@ -211,7 +216,7 @@ export default function PostCard({ post }: PostCardProps) {
             </div>
 
             {isEditing ? (
-              <div className="space-y-2 border rounded-lg p-4 bg-muted/30 transition-all duration-300 animate-in fade-in-0">
+              <div className="space-y-2 border rounded-lg p-4 bg-gradient-to-br from-purple-50 to-violet-50/30 transition-all duration-300 animate-in fade-in-0 shadow-glow-soft-purple">
                 <div className="flex items-center gap-2 mb-2">
                   <Edit2 className="h-4 w-4" />
                   <span className="font-medium">Editing Reply</span>
@@ -219,7 +224,7 @@ export default function PostCard({ post }: PostCardProps) {
                 <Textarea
                   value={editedReply}
                   onChange={(e) => setEditedReply(e.target.value)}
-                  className="min-h-[150px] bg-background resize-y transition-all duration-200 focus:shadow-md"
+                  className="min-h-[150px] bg-white/80 resize-y transition-all duration-300 focus:shadow-glow-soft-purple"
                   placeholder="Edit your reply here..."
                 />
                 <div className="flex justify-end gap-2 mt-4">
@@ -230,7 +235,7 @@ export default function PostCard({ post }: PostCardProps) {
                       setEditedReply(post.suggestedReply || "");
                       setIsEditing(false);
                     }}
-                    className="transition-colors duration-200"
+                    className="transition-all duration-300 hover:bg-red-50"
                   >
                     <X className="mr-2 h-4 w-4" />
                     Cancel Edit
@@ -239,7 +244,7 @@ export default function PostCard({ post }: PostCardProps) {
                     size="sm"
                     onClick={() => saveReplyMutation.mutate(editedReply)}
                     disabled={saveReplyMutation.isPending}
-                    className="transition-all duration-200"
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 text-white transition-all duration-300 hover:shadow-glow-green"
                   >
                     <Save className="mr-2 h-4 w-4" />
                     Save Changes
@@ -247,19 +252,19 @@ export default function PostCard({ post }: PostCardProps) {
                 </div>
               </div>
             ) : (
-              <div className="relative border rounded-lg p-4 group hover:border-primary/50 transition-all duration-300 hover:shadow-md">
+              <div className="relative border rounded-lg p-4 group hover:border-primary/50 transition-all duration-300 hover:shadow-glow-soft-purple bg-gradient-to-br from-white to-purple-50/30">
                 <div className="absolute top-2 right-2 z-10">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0"
+                    className="shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 hover:shadow-glow-purple"
                     onClick={() => setIsEditing(true)}
                   >
                     <Edit2 className="mr-2 h-4 w-4" />
                     Edit Reply
                   </Button>
                 </div>
-                <div className="text-muted-foreground group-hover:text-foreground pr-[100px] transition-colors duration-200 whitespace-pre-wrap">
+                <div className="text-muted-foreground group-hover:text-foreground pr-[100px] transition-all duration-300 whitespace-pre-wrap">
                   {post.suggestedReply}
                 </div>
               </div>
@@ -268,13 +273,13 @@ export default function PostCard({ post }: PostCardProps) {
         )}
       </CardContent>
 
-      {post.status === "pending" && (
+      {post.status === "opportunities" && (
         <CardFooter className="flex justify-end gap-2">
           <Button
             variant="outline"
             onClick={() => updateStatusMutation.mutate("ignored")}
             disabled={updateStatusMutation.isPending}
-            className="transition-all duration-200 hover:bg-destructive/10"
+            className="transition-all duration-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
           >
             <X className="mr-2 h-4 w-4" />
             Ignore Post
@@ -282,7 +287,7 @@ export default function PostCard({ post }: PostCardProps) {
           <Button
             onClick={() => updateStatusMutation.mutate("replied")}
             disabled={updateStatusMutation.isPending}
-            className="transition-all duration-200"
+            className="bg-gradient-to-r from-green-500 to-emerald-600 text-white transition-all duration-300 hover:shadow-glow-green"
           >
             <Check className="mr-2 h-4 w-4" />
             Mark as Replied
