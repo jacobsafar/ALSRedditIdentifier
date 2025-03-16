@@ -17,7 +17,7 @@ import type { MonitoredPost } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 
@@ -31,6 +31,7 @@ export default function PostCard({ post }: PostCardProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editedReply, setEditedReply] = useState(post.suggestedReply || "");
   const [isEditing, setIsEditing] = useState(false);
+  const postRef = useRef<HTMLDivElement>(null);
 
   // Update editedReply whenever post.suggestedReply changes
   useEffect(() => {
@@ -49,10 +50,21 @@ export default function PostCard({ post }: PostCardProps) {
     mutationFn: (prompt: string) =>
       apiRequest("POST", `/api/posts/${post.id}/regenerate-reply`, { customPrompt: prompt }),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-      setIsDialogOpen(false);
       // Update the editedReply state with the new reply
       setEditedReply(data.suggestedReply);
+      // Only close dialog after successful regeneration
+      setIsDialogOpen(false);
+      // Clear the custom prompt
+      setCustomPrompt("");
+      // Update the cache without causing a full re-render
+      queryClient.setQueryData(["/api/posts"], (oldData: MonitoredPost[] | undefined) => {
+        if (!oldData) return oldData;
+        return oldData.map(p =>
+          p.id === post.id
+            ? { ...p, suggestedReply: data.suggestedReply }
+            : p
+        );
+      });
       toast({ title: "Reply regenerated successfully" });
     },
     onError: (error: Error) => {
