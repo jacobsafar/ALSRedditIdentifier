@@ -42,6 +42,7 @@ const generateSystemPrompt = (values: {
   const replyStyle = values.replyStyle?.trim() || "a courteous and factual 1-2 sentence reply that addresses their concerns";
 
   return `${basePrompt}
+
 Please analyze the following text and respond with a JSON object containing:
 {
   "score": number between 1-10 where ${scoringCriteria},
@@ -62,14 +63,16 @@ const parseSystemPrompt = (prompt: string) => {
   if (!prompt) return defaultValues;
 
   try {
-    // Try to extract values from the prompt
-    const basePromptMatch = prompt.match(/^(.*?)(?=\n\nPlease analyze)/s);
-    const scoringMatch = prompt.match(/"score":\s*number between 1-10 where\s*(.*?)(?=,)/);
-    const analysisMatch = prompt.match(/"analysis":\s*(.*?)(?=,)/);
-    const replyMatch = prompt.match(/"suggestedReply":\s*(.*?)(?=\n*})/);
+    // Extract the base prompt - everything before the JSON format instructions
+    const basePromptMatch = prompt.split("Please analyze the following text")[0].trim();
+
+    // Extract other components using more precise patterns
+    const scoringMatch = prompt.match(/score":\s*number between 1-10 where\s*(.*?)(?=,|\})/);
+    const analysisMatch = prompt.match(/"analysis":\s*(.*?)(?=,|\})/);
+    const replyMatch = prompt.match(/"suggestedReply":\s*(.*?)(?=\})/);
 
     return {
-      basePrompt: basePromptMatch?.[1]?.trim() || defaultValues.basePrompt,
+      basePrompt: basePromptMatch || defaultValues.basePrompt,
       scoringCriteria: scoringMatch?.[1]?.trim() || defaultValues.scoringCriteria,
       analysisGuidance: analysisMatch?.[1]?.trim() || defaultValues.analysisGuidance,
       replyStyle: replyMatch?.[1]?.trim() || defaultValues.replyStyle,
