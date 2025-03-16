@@ -42,7 +42,6 @@ const generateSystemPrompt = (values: {
   const replyStyle = values.replyStyle?.trim() || "a courteous and factual 1-2 sentence reply that addresses their concerns";
 
   return `${basePrompt}
-
 Please analyze the following text and respond with a JSON object containing:
 {
   "score": number between 1-10 where ${scoringCriteria},
@@ -136,15 +135,17 @@ export default function Settings() {
     }) => {
       // Generate the system prompt from the form fields
       const systemPrompt = generateSystemPrompt({
-        basePrompt: data.basePrompt,
-        scoringCriteria: data.scoringCriteria,
-        analysisGuidance: data.analysisGuidance,
-        replyStyle: data.replyStyle
+        basePrompt: data.basePrompt || '',
+        scoringCriteria: data.scoringCriteria || '',
+        analysisGuidance: data.analysisGuidance || '',
+        replyStyle: data.replyStyle || ''
       });
 
-      // Send the complete config with the generated system prompt
+      // Send only the Config fields to the API
       return apiRequest("PUT", "/api/config", {
-        ...data,
+        scoreThreshold: data.scoreThreshold,
+        checkFrequency: data.checkFrequency,
+        postsPerFetch: data.postsPerFetch,
         openAiPrompt: systemPrompt
       });
     },
