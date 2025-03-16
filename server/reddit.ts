@@ -25,8 +25,10 @@ export class RedditClient {
 
   async getNewPosts(subreddit: string, limit = 25) {
     try {
-      console.log(`Fetching posts from r/${subreddit}`);
-      const posts = await this.client.getSubreddit(subreddit).getNew({ limit });
+      // Strip 'r/' prefix if present
+      const subredditName = subreddit.replace(/^r\//, '');
+      console.log(`Fetching posts from r/${subredditName}`);
+      const posts = await this.client.getSubreddit(subredditName).getNew({ limit });
       console.log(`Successfully fetched ${posts.length} posts`);
       return posts.map(post => ({
         postId: post.id,
@@ -46,8 +48,10 @@ export class RedditClient {
 
   async getNewComments(subreddit: string, limit = 25) {
     try {
-      console.log(`Fetching comments from r/${subreddit}`);
-      const comments = await this.client.getSubreddit(subreddit).getNewComments({ limit });
+      // Strip 'r/' prefix if present
+      const subredditName = subreddit.replace(/^r\//, '');
+      console.log(`Fetching comments from r/${subredditName}`);
+      const comments = await this.client.getSubreddit(subredditName).getNewComments({ limit });
       console.log(`Successfully fetched ${comments.length} comments`);
       return comments.map(comment => ({
         postId: comment.id,
