@@ -2,6 +2,22 @@ import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Extract reply style from the system prompt
+function extractReplyStyle(systemPrompt: string): string {
+  try {
+    // Look for the suggestedReply part of the prompt
+    const replyMatch = systemPrompt.match(/suggestedReply":\s*(.*?)(?=\s*}|\s*$)/);
+    if (replyMatch && replyMatch[1]) {
+      return replyMatch[1].trim();
+    }
+    // Fallback to default if no match found
+    return "a courteous and factual 1-2 sentence reply that addresses their concerns";
+  } catch (error) {
+    console.error("Error extracting reply style:", error);
+    return "a courteous and factual 1-2 sentence reply that addresses their concerns";
+  }
+}
+
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 export async function analyzeContent(
   text: string,
@@ -69,8 +85,17 @@ Please analyze the following text and respond with a JSON object containing:
 export async function regenerateReply(
   text: string,
   customPrompt?: string,
+  configPrompt?: string,
 ): Promise<string> {
   try {
+    let prompt = customPrompt;
+
+    if (!prompt && configPrompt) {
+      // Extract the reply style from the config prompt
+      const replyStyle = extractReplyStyle(configPrompt);
+      prompt = `You are an AI assistant providing ${replyStyle}. Focus on addressing the key points and maintaining a helpful, informative tone.`;
+    }
+
     const defaultPrompt =
       "You are an AI assistant generating a courteous and factual reply to a Reddit comment or post about AI technology. Generate a 1-2 sentence response that addresses their concerns and provides accurate information.";
 
@@ -79,7 +104,7 @@ export async function regenerateReply(
       messages: [
         {
           role: "system",
-          content: customPrompt || defaultPrompt,
+          content: prompt || defaultPrompt,
         },
         {
           role: "user",

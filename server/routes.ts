@@ -110,8 +110,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const postId = Number(req.params.id);
       const { customPrompt } = req.body;
 
-      // Get the post content
+      // Get the post content and current config
       const [post] = await storage.getPosts({ id: postId });
+      const config = await storage.getConfig();
+
       if (!post) {
         res.status(404).json({ error: "Post not found" });
         return;
@@ -120,7 +122,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Only regenerate the reply, not the analysis
       const newReply = await regenerateReply(
         post.title + "\n" + post.content,
-        customPrompt
+        customPrompt,
+        config.openAiPrompt // Pass the config prompt
       );
 
       // Update only the suggested reply
