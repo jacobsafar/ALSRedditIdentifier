@@ -336,50 +336,54 @@ export default function Dashboard() {
         ) : (
           <div className="space-y-6">
             {/* High Priority Section - Only show for pending tab */}
-            {activeTab === "pending" && highPriorityPosts?.length > 0 && (
+            {activeTab === "pending" && sortedPosts?.filter(post => post.score >= 8).length > 0 && (
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold text-red-600 flex items-center gap-2">
                   High Priority Content
                   <span className="text-sm bg-red-100 text-red-700 px-2 py-1 rounded-full">
-                    {highPriorityPosts.length} items
+                    {sortedPosts.filter(post => post.score >= 8).length} items
                   </span>
                 </h2>
                 <div className="grid gap-4">
-                  {highPriorityPosts.map((post: MonitoredPost) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
+                  {sortedPosts
+                    .filter(post => post.score >= 8)
+                    .map((post: MonitoredPost) => (
+                      <PostCard key={post.id} post={post} />
+                    ))}
                 </div>
               </div>
             )}
 
             {/* Normal Priority Section */}
-            {normalPriorityPosts?.length > 0 && (
+            {sortedPosts?.filter(post => activeTab !== "pending" || post.score < 8).length > 0 && (
               <div className="space-y-4">
                 {activeTab === "pending" ? (
                   <h2 className="text-xl font-semibold text-gray-600 flex items-center gap-2">
                     Normal Priority Content
                     <span className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-                      {normalPriorityPosts.length} items
+                      {sortedPosts.filter(post => post.score < 8).length} items
                     </span>
                   </h2>
                 ) : (
                   <h2 className="text-xl font-semibold text-gray-600 flex items-center gap-2">
                     {activeTab === "replied" ? "Replied Content" : "Ignored Content"}
                     <span className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-                      {normalPriorityPosts.length} items
+                      {sortedPosts.length} items
                     </span>
                   </h2>
                 )}
                 <div className="grid gap-4">
-                  {normalPriorityPosts.map((post: MonitoredPost) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
+                  {sortedPosts
+                    .filter(post => activeTab !== "pending" || post.score < 8)
+                    .map((post: MonitoredPost) => (
+                      <PostCard key={post.id} post={post} />
+                    ))}
                 </div>
               </div>
             )}
 
             {/* Empty State */}
-            {(!highPriorityPosts?.length && !normalPriorityPosts?.length) && (
+            {(!sortedPosts?.length) && (
               <Card className="p-6 text-center text-muted-foreground">
                 No {activeTab} posts found
                 {selectedSubreddit !== "all" && " in r/" + selectedSubreddit}
