@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { RedditClient } from "./reddit";
-import { analyzeContent } from "./openai";
+import { analyzeContent, regenerateReply } from "./openai"; // Added regenerateReply import
 import { insertSubredditSchema, insertPostSchema, configSchema } from "@shared/schema";
 
 let redditClient: RedditClient;
@@ -117,31 +117,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Get config for system prompt
-      const config = await storage.getConfig();
-
-      // Analyze with custom prompt
-      const analysis = await analyzeContent(
+      // Only regenerate the reply, not the analysis
+      const newReply = await regenerateReply(
         post.title + "\n" + post.content,
-        customPrompt || config.openAiPrompt
+        customPrompt
       );
 
-      // Update the post with new analysis while preserving score and status
+      // Update only the suggested reply
       await storage.updatePostAnalysis(postId, {
-        score: post.score, // Keep original score
-        analysis: {
-          analysis: analysis.analysis // Only update the analysis text
-        },
-        suggestedReply: analysis.suggestedReply,
-        status: post.status // Preserve existing status
+        score: post.score,
+        analysis: post.analysis,
+        suggestedReply: newReply,
+        status: post.status
       });
 
       res.json({
         score: post.score,
-        analysis: {
-          analysis: analysis.analysis
-        },
-        suggestedReply: analysis.suggestedReply
+        analysis: post.analysis,
+        suggestedReply: newReply
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
