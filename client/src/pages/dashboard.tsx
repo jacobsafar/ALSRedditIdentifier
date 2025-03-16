@@ -5,7 +5,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Select,
   SelectContent,
@@ -221,10 +220,7 @@ export default function Dashboard() {
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-4">
-          <h1 className="text-4xl font-bold">Reddit AI Monitor</h1>
-          <ThemeToggle />
-        </div>
+        <h1 className="text-4xl font-bold">Reddit AI Monitor</h1>
         <div className="flex gap-2">
           <Button
             onClick={() => fetchMutation.mutate()}

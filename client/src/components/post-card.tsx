@@ -92,33 +92,29 @@ export default function PostCard({ post }: PostCardProps) {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 9) return "bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-glow-red";
-    if (score >= 7) return "bg-gradient-to-r from-orange-400 to-amber-500 text-white shadow-glow-orange";
-    if (score >= 5) return "bg-gradient-to-r from-yellow-400 to-amber-300 shadow-glow-yellow";
-    return "bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-glow-green";
+    if (score >= 9) return "bg-red-500 text-white";
+    if (score >= 7) return "bg-orange-500 text-white";
+    if (score >= 5) return "bg-yellow-500";
+    return "bg-green-500 text-white";
   };
 
   const analysis = post.analysis as { analysis: string };
 
   return (
     <Card className={cn(
-      "transition-all duration-500 ease-in-out transform hover:scale-[1.02] hover:shadow-xl bg-background",
-      post.score >= 9 && "border-red-200 shadow-glow-soft-red",
-      post.score >= 7 && post.score < 9 && "border-orange-200 shadow-glow-soft-orange"
+      "transition-colors",
+      post.score >= 9 && "border-red-200 bg-red-50/50",
+      post.score >= 7 && post.score < 9 && "border-orange-200 bg-orange-50/50"
     )}>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold transition-all duration-300 hover:text-primary hover:scale-105">
-            r/{post.subreddit}
-          </h3>
-          <Badge className="transition-all duration-300 bg-gradient-to-r from-violet-500 to-purple-500 hover:shadow-glow-purple">
-            {post.author}
-          </Badge>
+          <h3 className="font-semibold">r/{post.subreddit}</h3>
+          <Badge>{post.author}</Badge>
           <Badge className={cn(
             getScoreColor(post.score),
-            "flex items-center gap-1 transition-all duration-300"
+            "flex items-center gap-1"
           )}>
-            {post.score >= 8 && <AlertTriangle className="h-3 w-3 animate-pulse" />}
+            {post.score >= 8 && <AlertTriangle className="h-3 w-3" />}
             Score: {post.score}
           </Badge>
           <span className="text-sm text-muted-foreground">
@@ -129,7 +125,7 @@ export default function PostCard({ post }: PostCardProps) {
           href={post.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="hover:text-primary transition-all duration-300 hover:scale-110"
+          className="hover:text-primary"
         >
           <ExternalLink className="h-4 w-4" />
         </a>
@@ -137,55 +133,142 @@ export default function PostCard({ post }: PostCardProps) {
 
       <CardContent className="space-y-4">
         {post.title && (
-          <div className="transition-all duration-300 ease-in-out group">
+          <div>
             <h4 className="font-medium mb-1">Title</h4>
             <p className={cn(
-              "text-lg transition-all duration-300 group-hover:scale-[1.01]",
-              post.score >= 8 && "font-semibold text-red-900 dark:text-red-400"
+              "text-lg",
+              post.score >= 8 && "font-semibold"
             )}>{post.title}</p>
           </div>
         )}
 
         <div>
           <h4 className="font-medium mb-1">Content</h4>
-          <p className="whitespace-pre-wrap transition-colors duration-300">{post.content}</p>
+          <p className="whitespace-pre-wrap">{post.content}</p>
         </div>
 
         <div>
           <h4 className="font-medium mb-1">Analysis</h4>
           <p className={cn(
-            "text-muted-foreground transition-colors duration-300",
-            post.score >= 8 && "text-red-700 dark:text-red-400"
+            "text-muted-foreground",
+            post.score >= 8 && "text-red-700"
           )}>{analysis.analysis}</p>
         </div>
 
         {post.suggestedReply && (
-          <div>
-            <div className="relative border rounded-lg p-4 group hover:border-primary/50 transition-all duration-300 hover:shadow-glow-soft-purple">
-              <Button
-                variant="outline"
-                size="sm"
-                className="shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 hover:shadow-glow-purple"
-                onClick={() => setIsEditing(true)}
-              >
-                <Edit2 className="mr-2 h-4 w-4" />
-                Edit Reply
-              </Button>
-              <div className="text-muted-foreground group-hover:text-foreground pr-[100px] transition-all duration-300 whitespace-pre-wrap">
-                {post.suggestedReply}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <h4 className="font-medium">Suggested Reply</h4>
+                <div className="flex gap-2">
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Regenerate Reply
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Regenerate Reply</DialogTitle>
+                        <DialogDescription>
+                          Enter a custom prompt to generate a new reply for this content.
+                          Leave blank to use the default system prompt.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <Textarea
+                        value={customPrompt}
+                        onChange={(e) => setCustomPrompt(e.target.value)}
+                        placeholder="Enter custom prompt or leave blank for default"
+                        className="min-h-[100px]"
+                      />
+                      <DialogFooter className="mt-4">
+                        <Button
+                          onClick={() => regenerateReplyMutation.mutate(customPrompt)}
+                          disabled={regenerateReplyMutation.isPending}
+                        >
+                          {regenerateReplyMutation.isPending && (
+                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                          )}
+                          Regenerate Reply
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  <Button
+                    size="sm"
+                    onClick={copyAndMarkReplied}
+                    disabled={updateStatusMutation.isPending}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    Copy & Open in Reddit
+                    <ExternalLink className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
               </div>
+              {isEditing ? (
+                <div className="space-y-2 border rounded-lg p-4 bg-muted/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Edit2 className="h-4 w-4" />
+                    <span className="font-medium">Editing Reply</span>
+                  </div>
+                  <Textarea
+                    value={editedReply}
+                    onChange={(e) => setEditedReply(e.target.value)}
+                    className="min-h-[150px] bg-background resize-y"
+                    placeholder="Edit your reply here..."
+                  />
+                  <div className="flex justify-end gap-2 mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditedReply(post.suggestedReply || "");
+                        setIsEditing(false);
+                      }}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Cancel Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => saveReplyMutation.mutate(editedReply)}
+                      disabled={saveReplyMutation.isPending}
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Changes
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative border rounded-lg p-4 group hover:border-primary/50 transition-colors">
+                  <div className="absolute top-2 right-2 z-10">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shadow-sm"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      <Edit2 className="mr-2 h-4 w-4" />
+                      Edit Reply
+                    </Button>
+                  </div>
+                  <div
+                    className="text-muted-foreground group-hover:text-foreground pr-[100px] transition-colors whitespace-pre-wrap"
+                  >
+                    {post.suggestedReply}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )}
       </CardContent>
 
-      {post.status === "opportunities" && (
+      {post.status === "pending" && (
         <CardFooter className="flex justify-end gap-2">
           <Button
             variant="outline"
             onClick={() => updateStatusMutation.mutate("ignored")}
             disabled={updateStatusMutation.isPending}
-            className="transition-all duration-300 hover:bg-red-100 dark:hover:bg-red-900/10 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200"
           >
             <X className="mr-2 h-4 w-4" />
             Ignore Post
@@ -193,7 +276,6 @@ export default function PostCard({ post }: PostCardProps) {
           <Button
             onClick={() => updateStatusMutation.mutate("replied")}
             disabled={updateStatusMutation.isPending}
-            className="bg-gradient-to-r from-green-500 to-emerald-600 text-white transition-all duration-300 hover:shadow-glow-green"
           >
             <Check className="mr-2 h-4 w-4" />
             Mark as Replied

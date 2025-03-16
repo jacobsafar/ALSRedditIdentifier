@@ -1,11 +1,6 @@
 {
-  "variant": "vibrant",
-  "primary": "hsl(265, 84%, 45%)",
-  "appearance": "system",
-  "radius": 1,
-  "animations": {
-    "button": "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-    "card": "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-    "glow": "glow 1.5s ease-in-out infinite alternate"
-  }
+  "variant": "professional",
+  "primary": "hsl(222.2 47.4% 11.2%)",
+  "appearance": "light",
+  "radius": 0.5
 }
