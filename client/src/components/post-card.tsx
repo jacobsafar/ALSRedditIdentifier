@@ -48,13 +48,10 @@ export default function PostCard({ post }: PostCardProps) {
 
   const regenerateReplyMutation = useMutation({
     mutationFn: async (prompt: string) => {
-      const response = await apiRequest("POST", `/api/posts/${post.id}/regenerate-reply`, { customPrompt: prompt });
-      if (!response.suggestedReply) {
-        throw new Error("Invalid response format");
-      }
+      const response = await apiRequest<{ suggestedReply: string }>("POST", `/api/posts/${post.id}/regenerate-reply`, { customPrompt: prompt });
       return response;
     },
-    onSuccess: (data: { suggestedReply: string }) => {
+    onSuccess: (data) => {
       // Update the editedReply state with the new reply
       setEditedReply(data.suggestedReply);
       // Only close dialog after successful regeneration
