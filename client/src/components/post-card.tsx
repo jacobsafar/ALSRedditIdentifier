@@ -246,7 +246,7 @@ export default function PostCard({ post }: PostCardProps) {
               }
             }}
             className={cn(
-              "min-h-[150px] resize-y",
+              "min-h-[100px] resize-y",
               !isEditing && "hover:border-primary/50 cursor-text"
             )}
             placeholder="Edit your reply here..."
