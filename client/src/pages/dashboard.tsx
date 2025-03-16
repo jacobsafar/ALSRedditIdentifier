@@ -107,8 +107,14 @@ export default function Dashboard() {
     }
   });
 
-  // Sort posts by score in descending order
-  const sortedPosts = posts?.sort((a: MonitoredPost, b: MonitoredPost) => b.score - a.score);
+  // Sort posts by score in descending order and then by timestamp
+  const sortedPosts = posts?.sort((a: MonitoredPost, b: MonitoredPost) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    // If scores are equal, sort by timestamp (newest first)
+    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+  });
 
   // Separate high-priority (score >= 8) from normal priority posts
   const highPriorityPosts = sortedPosts?.filter((post: MonitoredPost) => post.score >= 8);
