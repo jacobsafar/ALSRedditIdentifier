@@ -31,10 +31,10 @@ import { queryClient } from "@/lib/queryClient";
 
 // Helper function to generate system prompt from form fields
 const generateSystemPrompt = (values: {
-  basePrompt: string;
-  scoringCriteria: string;
-  analysisGuidance: string;
-  replyStyle: string;
+  basePrompt?: string;
+  scoringCriteria?: string;
+  analysisGuidance?: string;
+  replyStyle?: string;
 }) => {
   const basePrompt = values.basePrompt?.trim() || "You are an AI assistant analyzing Reddit content for sentiment about AI technology.";
   const scoringCriteria = values.scoringCriteria?.trim() || "10 indicates high relevance and strong negative sentiment about AI";
@@ -42,6 +42,7 @@ const generateSystemPrompt = (values: {
   const replyStyle = values.replyStyle?.trim() || "a courteous and factual 1-2 sentence reply that addresses their concerns";
 
   return `${basePrompt}
+
 Please analyze the following text and respond with a JSON object containing:
 {
   "score": number between 1-10 where ${scoringCriteria},
@@ -61,18 +62,23 @@ const parseSystemPrompt = (prompt: string) => {
 
   if (!prompt) return defaultValues;
 
-  // Try to extract values from the prompt
-  const basePromptMatch = prompt.match(/^(.*?)(?=\n\nPlease analyze)/s);
-  const scoringMatch = prompt.match(/"score":\s*number between 1-10 where\s*(.*?)(?=,)/);
-  const analysisMatch = prompt.match(/"analysis":\s*(.*?)(?=,)/);
-  const replyMatch = prompt.match(/"suggestedReply":\s*(.*?)(?=\n*})/);
+  try {
+    // Try to extract values from the prompt
+    const basePromptMatch = prompt.match(/^(.*?)(?=\n\nPlease analyze)/s);
+    const scoringMatch = prompt.match(/"score":\s*number between 1-10 where\s*(.*?)(?=,)/);
+    const analysisMatch = prompt.match(/"analysis":\s*(.*?)(?=,)/);
+    const replyMatch = prompt.match(/"suggestedReply":\s*(.*?)(?=\n*})/);
 
-  return {
-    basePrompt: basePromptMatch?.[1]?.trim() || defaultValues.basePrompt,
-    scoringCriteria: scoringMatch?.[1]?.trim() || defaultValues.scoringCriteria,
-    analysisGuidance: analysisMatch?.[1]?.trim() || defaultValues.analysisGuidance,
-    replyStyle: replyMatch?.[1]?.trim() || defaultValues.replyStyle,
-  };
+    return {
+      basePrompt: basePromptMatch?.[1]?.trim() || defaultValues.basePrompt,
+      scoringCriteria: scoringMatch?.[1]?.trim() || defaultValues.scoringCriteria,
+      analysisGuidance: analysisMatch?.[1]?.trim() || defaultValues.analysisGuidance,
+      replyStyle: replyMatch?.[1]?.trim() || defaultValues.replyStyle,
+    };
+  } catch (error) {
+    console.error('Error parsing system prompt:', error);
+    return defaultValues;
+  }
 };
 
 export default function Settings() {
@@ -94,10 +100,15 @@ export default function Settings() {
     analysisGuidance: string;
     replyStyle: string;
   }>({
-    resolver: zodResolver(configSchema),
+    resolver: zodResolver(configSchema.extend({
+      basePrompt: configSchema.shape.openAiPrompt,
+      scoringCriteria: configSchema.shape.openAiPrompt,
+      analysisGuidance: configSchema.shape.openAiPrompt,
+      replyStyle: configSchema.shape.openAiPrompt,
+    })),
     defaultValues: {
       scoreThreshold: 7,
-      checkFrequency: 60,
+      checkFrequency: 1,
       postsPerFetch: 25,
       openAiPrompt: "",
       basePrompt: "",
@@ -110,11 +121,20 @@ export default function Settings() {
   // Update form values when config is loaded
   React.useEffect(() => {
     if (config) {
-      const promptFields = parseSystemPrompt(config.openAiPrompt);
-      configForm.reset({
-        ...config,
-        ...promptFields
-      });
+      try {
+        const promptFields = parseSystemPrompt(config.openAiPrompt);
+        configForm.reset({
+          ...config,
+          ...promptFields
+        });
+      } catch (error) {
+        console.error('Error setting form values:', error);
+        toast({
+          title: "Error loading settings",
+          description: "Failed to parse the existing configuration. Default values will be used.",
+          variant: "destructive"
+        });
+      }
     }
   }, [config]);
 
@@ -127,34 +147,41 @@ export default function Settings() {
   });
 
   const updateConfigMutation = useMutation({
-    mutationFn: (data: Config & {
+    mutationFn: async (data: Config & {
       basePrompt: string;
       scoringCriteria: string;
       analysisGuidance: string;
       replyStyle: string;
     }) => {
-      // Generate the system prompt from the form fields
-      const systemPrompt = generateSystemPrompt({
-        basePrompt: data.basePrompt || '',
-        scoringCriteria: data.scoringCriteria || '',
-        analysisGuidance: data.analysisGuidance || '',
-        replyStyle: data.replyStyle || ''
-      });
+      try {
+        // Generate the system prompt from the form fields
+        const systemPrompt = generateSystemPrompt({
+          basePrompt: data.basePrompt,
+          scoringCriteria: data.scoringCriteria,
+          analysisGuidance: data.analysisGuidance,
+          replyStyle: data.replyStyle
+        });
 
-      // Send only the Config fields to the API
-      return apiRequest("PUT", "/api/config", {
-        scoreThreshold: data.scoreThreshold,
-        checkFrequency: data.checkFrequency,
-        postsPerFetch: data.postsPerFetch,
-        openAiPrompt: systemPrompt
-      });
+        // Send only the Config fields to the API
+        const configData: Config = {
+          scoreThreshold: data.scoreThreshold,
+          checkFrequency: data.checkFrequency,
+          postsPerFetch: data.postsPerFetch,
+          openAiPrompt: systemPrompt
+        };
+
+        return await apiRequest("PUT", "/api/config", configData);
+      } catch (error) {
+        console.error('Error updating config:', error);
+        throw new Error('Failed to update configuration');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/config"] });
       toast({ title: "Settings updated successfully" });
     },
     onError: (error: Error) => {
-      toast({ 
+      toast({
         title: "Failed to update settings",
         description: error.message,
         variant: "destructive"
@@ -213,7 +240,7 @@ export default function Settings() {
                       <FormItem>
                         <FormLabel>Minimum Score Threshold (1-10)</FormLabel>
                         <FormControl>
-                          <Input type="number" min={1} max={10} {...field} />
+                          <Input type="number" min={1} max={10} {...field} onChange={e => field.onChange(Number(e.target.value))} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -232,7 +259,8 @@ export default function Settings() {
                             min={0.5} 
                             max={12} 
                             step={0.5}
-                            {...field} 
+                            {...field}
+                            onChange={e => field.onChange(Number(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />
@@ -255,6 +283,7 @@ export default function Settings() {
                             min={5}
                             max={100}
                             {...field}
+                            onChange={e => field.onChange(Number(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />
