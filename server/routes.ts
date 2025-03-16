@@ -123,12 +123,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customPrompt
       );
 
-      // Update only the suggested reply
+      // Update only the suggested reply while preserving original timestamp
       await storage.updatePostAnalysis(postId, {
         score: post.score,
         analysis: post.analysis,
         suggestedReply: newReply,
-        status: post.status
+        status: post.status,
+        timestamp: post.timestamp, // Preserve original timestamp
+        statusChangedAt: post.statusChangedAt // Preserve original status timestamp
       });
 
       res.json({
