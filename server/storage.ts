@@ -13,6 +13,8 @@ export interface IStorage {
   getPosts(filter?: { status?: string }): Promise<MonitoredPost[]>;
   addPost(post: InsertPost): Promise<MonitoredPost>;
   updatePostStatus(id: number, status: string): Promise<void>;
+  clearAllPosts(): Promise<void>;
+  ignoreAllPendingPosts(): Promise<void>;
 
   // Config management
   getConfig(): Promise<Config>;
@@ -77,6 +79,17 @@ Please analyze the following text and respond with a JSON object containing:
       .update(monitoredPosts)
       .set({ status })
       .where(eq(monitoredPosts.id, id));
+  }
+
+  async clearAllPosts(): Promise<void> {
+    await db.delete(monitoredPosts);
+  }
+
+  async ignoreAllPendingPosts(): Promise<void> {
+    await db
+      .update(monitoredPosts)
+      .set({ status: "ignored" })
+      .where(eq(monitoredPosts.status, "pending"));
   }
 
   async getConfig(): Promise<Config> {

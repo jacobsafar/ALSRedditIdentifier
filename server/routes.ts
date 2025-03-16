@@ -85,6 +85,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/posts", async (_req, res) => {
+    try {
+      await storage.clearAllPosts();
+      res.status(204).send();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ error: errorMessage });
+    }
+  });
+
+  app.patch("/api/posts/ignore-all", async (_req, res) => {
+    try {
+      await storage.ignoreAllPendingPosts();
+      res.status(204).send();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ error: errorMessage });
+    }
+  });
+
   // Config management
   app.get("/api/config", async (_req, res) => {
     try {

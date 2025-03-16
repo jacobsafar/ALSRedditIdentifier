@@ -5,7 +5,18 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, RefreshCw, Loader2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Settings, RefreshCw, Loader2, Trash2, Ban } from "lucide-react";
 import PostCard from "@/components/post-card";
 import type { MonitoredPost } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
@@ -52,7 +63,6 @@ export default function Dashboard() {
         });
       }
 
-      // Clear the status after a delay
       setTimeout(() => setFetchStatus(""), 3000);
     },
     onError: (error: Error) => {
@@ -62,6 +72,38 @@ export default function Dashboard() {
         variant: "destructive"
       });
       setFetchStatus("");
+    }
+  });
+
+  const clearAllMutation = useMutation({
+    mutationFn: () =>
+      fetch("/api/posts", { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      toast({ title: "Successfully cleared all posts" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to clear posts",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const ignoreAllMutation = useMutation({
+    mutationFn: () =>
+      fetch("/api/posts/ignore-all", { method: "PATCH" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      toast({ title: "Successfully ignored all pending posts" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to ignore posts",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   });
 
@@ -95,6 +137,60 @@ export default function Dashboard() {
             </Button>
           </Link>
         </div>
+      </div>
+
+      {/* Bulk Actions */}
+      <div className="flex gap-2 mb-6">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Clear All Posts
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete all posts, including replied and ignored ones.
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => clearAllMutation.mutate()}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete All
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Ban className="mr-2 h-4 w-4" />
+              Ignore All Pending
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will mark all pending posts as ignored.
+                You can still view them in the Ignored tab.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => ignoreAllMutation.mutate()}>
+                Ignore All
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       {/* Status message */}
