@@ -147,6 +147,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
+  app.patch("/api/posts/:id/update-reply", async (req, res) => {
+    try {
+      const postId = Number(req.params.id);
+      const { suggestedReply } = req.body;
+
+      // Get the post to preserve existing data
+      const [post] = await storage.getPosts({ id: postId });
+      if (!post) {
+        res.status(404).json({ error: "Post not found" });
+        return;
+      }
+
+      // Update only the suggested reply while preserving everything else
+      await storage.updatePostAnalysis(postId, {
+        score: post.score,
+        analysis: post.analysis,
+        suggestedReply,
+        status: post.status
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ error: errorMessage });
+    }
+  });
+
   // Config management
   app.get("/api/config", async (_req, res) => {
     try {

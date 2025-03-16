@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Copy, Check, X, AlertTriangle, RefreshCw } from "lucide-react";
+import { ExternalLink, Copy, Check, X, AlertTriangle, RefreshCw, Save } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +28,8 @@ export default function PostCard({ post }: PostCardProps) {
   const { toast } = useToast();
   const [customPrompt, setCustomPrompt] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editedReply, setEditedReply] = useState(post.suggestedReply || "");
+  const [isEditing, setIsEditing] = useState(false);
 
   const updateStatusMutation = useMutation({
     mutationFn: (status: string) =>
@@ -54,8 +56,43 @@ export default function PostCard({ post }: PostCardProps) {
     }
   });
 
-  const copyToClipboard = async () => {
-    await navigator.clipboard.writeText(post.suggestedReply || "");
+  const saveReplyMutation = useMutation({
+    mutationFn: (reply: string) =>
+      apiRequest("PATCH", `/api/posts/${post.id}/update-reply`, { suggestedReply: reply }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      setIsEditing(false);
+      toast({ title: "Reply saved successfully" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to save reply",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const copyAndMarkReplied = async () => {
+    try {
+      // Open Reddit post in new tab
+      window.open(post.url, '_blank');
+
+      // Copy reply with appended extension link
+      const replyWithExtension = `${post.suggestedReply}\n\n[Reply generated with AIBlock - Download our Chrome extension to protect yourself from AI content](https://chrome.google.com/webstore/detail/aiblock)`;
+      await navigator.clipboard.writeText(replyWithExtension);
+
+      // Mark as replied
+      await updateStatusMutation.mutateAsync("replied");
+
+      toast({ title: "Post opened and reply copied" });
+    } catch (error) {
+      toast({ 
+        title: "Failed to process",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive"
+      });
+    }
   };
 
   // Color coding based on score
@@ -159,12 +196,52 @@ export default function PostCard({ post }: PostCardProps) {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-                <Button variant="ghost" size="sm" onClick={copyToClipboard}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={copyAndMarkReplied}
+                  disabled={updateStatusMutation.isPending}
+                >
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
             </div>
-            <p className="text-muted-foreground">{post.suggestedReply}</p>
+            {isEditing ? (
+              <div className="space-y-2">
+                <Textarea
+                  value={editedReply}
+                  onChange={(e) => setEditedReply(e.target.value)}
+                  className="min-h-[100px]"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditedReply(post.suggestedReply || "");
+                      setIsEditing(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => saveReplyMutation.mutate(editedReply)}
+                    disabled={saveReplyMutation.isPending}
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div 
+                className="text-muted-foreground cursor-pointer hover:bg-muted/50 p-2 rounded"
+                onClick={() => setIsEditing(true)}
+              >
+                {post.suggestedReply}
+              </div>
+            )}
           </div>
         )}
       </CardContent>
