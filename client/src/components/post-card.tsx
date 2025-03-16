@@ -161,87 +161,97 @@ export default function PostCard({ post }: PostCardProps) {
           )}>{analysis.analysis}</p>
         </div>
 
-        {post.suggestedReply && (
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <h4 className="font-medium">Suggested Reply</h4>
-              <div className="flex gap-2">
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <RefreshCw className="mr-2 h-4 w-4" />
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <h4 className="font-medium">Suggested Reply</h4>
+            <div className="flex gap-2">
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Regenerate Reply
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Regenerate Reply</DialogTitle>
+                    <DialogDescription>
+                      Enter a custom prompt to generate a new reply for this content.
+                      Leave blank to use the default system prompt.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Textarea
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    placeholder="Enter custom prompt or leave blank for default"
+                    className="min-h-[100px]"
+                  />
+                  <DialogFooter className="mt-4">
+                    <Button
+                      onClick={() => regenerateReplyMutation.mutate(customPrompt)}
+                      disabled={regenerateReplyMutation.isPending}
+                    >
+                      {regenerateReplyMutation.isPending && (
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      )}
                       Regenerate Reply
                     </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Regenerate Reply</DialogTitle>
-                      <DialogDescription>
-                        Enter a custom prompt to generate a new reply for this content.
-                        Leave blank to use the default system prompt.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <Textarea
-                      value={customPrompt}
-                      onChange={(e) => setCustomPrompt(e.target.value)}
-                      placeholder="Enter custom prompt or leave blank for default"
-                      className="min-h-[100px]"
-                    />
-                    <DialogFooter className="mt-4">
-                      <Button
-                        onClick={() => regenerateReplyMutation.mutate(customPrompt)}
-                        disabled={regenerateReplyMutation.isPending}
-                      >
-                        {regenerateReplyMutation.isPending && (
-                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                        )}
-                        Regenerate Reply
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                {isEditing ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditedReply(post.suggestedReply || "");
-                        setIsEditing(false);
-                      }}
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => saveReplyMutation.mutate(editedReply)}
-                      disabled={saveReplyMutation.isPending}
-                    >
-                      <Save className="mr-2 h-4 w-4" />
-                      Save
-                    </Button>
-                  </>
-                ) : (
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              {isEditing ? (
+                <>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setIsEditing(true)}
+                    onClick={() => {
+                      setEditedReply(post.suggestedReply || "");
+                      setIsEditing(false);
+                    }}
                   >
-                    Edit
+                    <X className="mr-2 h-4 w-4" />
+                    Cancel
                   </Button>
-                )}
-              </div>
+                  <Button
+                    size="sm"
+                    onClick={() => saveReplyMutation.mutate(editedReply)}
+                    disabled={saveReplyMutation.isPending}
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    Save
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                >
+                  Edit
+                </Button>
+              )}
             </div>
-            <Textarea
-              value={editedReply}
-              onChange={(e) => setEditedReply(e.target.value)}
-              className="min-h-[150px] bg-background resize-y"
-              placeholder="Edit your reply here..."
-              disabled={!isEditing}
-            />
           </div>
-        )}
+          <Textarea
+            value={editedReply}
+            onChange={(e) => {
+              if (!isEditing) {
+                setIsEditing(true);
+              }
+              setEditedReply(e.target.value);
+            }}
+            onClick={() => {
+              if (!isEditing) {
+                setIsEditing(true);
+              }
+            }}
+            className={cn(
+              "min-h-[150px] resize-y",
+              !isEditing && "hover:border-primary/50 cursor-text"
+            )}
+            placeholder="Edit your reply here..."
+          />
+        </div>
       </CardContent>
 
       {post.status === "pending" && (
