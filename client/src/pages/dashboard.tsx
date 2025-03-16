@@ -29,7 +29,7 @@ import type { MonitoredPost } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
 import React from 'react';
 
-type SortOrder = "score_desc" | "score_asc" | "newest" | "oldest";
+type SortOrder = "score_desc" | "score_asc" | "newest" | "oldest" | "post_date_newest" | "post_date_oldest";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -82,12 +82,22 @@ export default function Dashboard() {
 
   // Sort posts based on active tab and criteria
   const sortedPosts = [...(filteredPosts || [])].sort((a: MonitoredPost, b: MonitoredPost) => {
-    const aTime = a.statusChangedAt ? new Date(a.statusChangedAt) : new Date(a.timestamp);
-    const bTime = b.statusChangedAt ? new Date(b.statusChangedAt) : new Date(b.timestamp);
+    const aActionTime = a.statusChangedAt ? new Date(a.statusChangedAt) : new Date(a.timestamp);
+    const bActionTime = b.statusChangedAt ? new Date(b.statusChangedAt) : new Date(b.timestamp);
+    const aPostTime = new Date(a.timestamp);
+    const bPostTime = new Date(b.timestamp);
 
     // For non-pending tabs, prioritize status change time by default
     if (activeTab !== "pending" && sortOrder === "newest") {
-      return bTime.getTime() - aTime.getTime();
+      return bActionTime.getTime() - aActionTime.getTime();
+    }
+
+    // Handle original post date sorting
+    if (sortOrder === "post_date_newest") {
+      return bPostTime.getTime() - aPostTime.getTime();
+    }
+    if (sortOrder === "post_date_oldest") {
+      return aPostTime.getTime() - bPostTime.getTime();
     }
 
     // Handle score-based sorting
@@ -98,18 +108,18 @@ export default function Dashboard() {
       return a.score - b.score;
     }
 
-    // Handle time-based sorting
+    // Handle action time-based sorting
     if (sortOrder === "newest") {
-      return bTime.getTime() - aTime.getTime();
+      return bActionTime.getTime() - aActionTime.getTime();
     }
     if (sortOrder === "oldest") {
-      return aTime.getTime() - bTime.getTime();
+      return aActionTime.getTime() - bActionTime.getTime();
     }
 
     // Default behavior based on tab
     return activeTab === "pending"
       ? b.score - a.score  // Default to score for pending
-      : bTime.getTime() - aTime.getTime(); // Default to newest for replied/ignored
+      : bActionTime.getTime() - aActionTime.getTime(); // Default to newest actions for replied/ignored
   });
 
   // Reset filters based on active tab
@@ -332,6 +342,8 @@ export default function Dashboard() {
                     <>
                       <SelectItem value="newest">Latest Actions First</SelectItem>
                       <SelectItem value="oldest">Oldest Actions First</SelectItem>
+                      <SelectItem value="post_date_newest">Post Date (Newest)</SelectItem>
+                      <SelectItem value="post_date_oldest">Post Date (Oldest)</SelectItem>
                       <SelectItem value="score_desc">Highest Score First</SelectItem>
                       <SelectItem value="score_asc">Lowest Score First</SelectItem>
                     </>
