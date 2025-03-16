@@ -36,13 +36,18 @@ const generateSystemPrompt = (values: {
   analysisGuidance: string;
   replyStyle: string;
 }) => {
-  return `${values.basePrompt.trim()}
+  const basePrompt = values.basePrompt?.trim() || "You are an AI assistant analyzing Reddit content for sentiment about AI technology.";
+  const scoringCriteria = values.scoringCriteria?.trim() || "10 indicates high relevance and strong negative sentiment about AI";
+  const analysisGuidance = values.analysisGuidance?.trim() || "a brief explanation of why you gave this score";
+  const replyStyle = values.replyStyle?.trim() || "a courteous and factual 1-2 sentence reply that addresses their concerns";
+
+  return `${basePrompt}
 
 Please analyze the following text and respond with a JSON object containing:
 {
-  "score": number between 1-10 where ${values.scoringCriteria.trim()},
-  "analysis": ${values.analysisGuidance.trim()},
-  "suggestedReply": ${values.replyStyle.trim()}
+  "score": number between 1-10 where ${scoringCriteria},
+  "analysis": ${analysisGuidance},
+  "suggestedReply": ${replyStyle}
 }`;
 };
 
