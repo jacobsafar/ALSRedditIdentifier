@@ -82,7 +82,9 @@ Please analyze the following text and respond with a JSON object containing:
   }
 
   async clearAllPosts(): Promise<void> {
-    await db.delete(monitoredPosts);
+    await db
+      .delete(monitoredPosts)
+      .where(eq(monitoredPosts.status, "pending"));
   }
 
   async ignoreAllPendingPosts(): Promise<void> {

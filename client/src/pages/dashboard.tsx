@@ -145,15 +145,15 @@ export default function Dashboard() {
           <AlertDialogTrigger asChild>
             <Button variant="destructive" size="sm">
               <Trash2 className="mr-2 h-4 w-4" />
-              Clear All Posts
+              Clear All Pending
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently delete all posts, including replied and ignored ones.
-                This action cannot be undone.
+                This will permanently delete all pending posts.
+                This action cannot be undone. Posts marked as 'replied' or 'ignored' will not be affected.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -162,7 +162,7 @@ export default function Dashboard() {
                 onClick={() => clearAllMutation.mutate()}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                Delete All
+                Delete All Pending
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
