@@ -33,7 +33,7 @@ type SortOrder = "score_desc" | "score_asc" | "newest" | "oldest" | "post_date_n
 
 export default function Dashboard() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("opportunities"); 
+  const [activeTab, setActiveTab] = useState("opportunities");
   const [fetchStatus, setFetchStatus] = useState("");
   const [selectedSubreddit, setSelectedSubreddit] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("score_desc");
@@ -65,7 +65,11 @@ export default function Dashboard() {
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ["/api/posts", activeTab],
-    queryFn: () => fetch(`/api/posts?status=${activeTab}`).then(r => r.json())
+    queryFn: () => {
+      // Map opportunities tab to pending status for API compatibility
+      const status = activeTab === "opportunities" ? "pending" : activeTab;
+      return fetch(`/api/posts?status=${status}`).then(r => r.json());
+    }
   });
 
   // Extract unique subreddits from posts
@@ -210,7 +214,7 @@ export default function Dashboard() {
     } else if (activeTab === 'ignored') {
       return type === 'latest' ? "Latest Ignored First" : "Oldest Ignored First";
     }
-    return ""; 
+    return "";
   };
 
   return (
