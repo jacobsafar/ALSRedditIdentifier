@@ -77,18 +77,31 @@ export default function Dashboard() {
 
   // Sort posts based on active tab and criteria
   const sortedPosts = [...(filteredPosts || [])].sort((a: MonitoredPost, b: MonitoredPost) => {
-    switch (sortOrder) {
-      case "score_desc":
-        return b.score - a.score;
-      case "score_asc":
-        return a.score - b.score;
-      case "newest":
-        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-      case "oldest":
-        return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
-      default:
-        return 0;
+    // For replied/ignored tabs, primarily sort by status change time
+    if (activeTab !== "pending") {
+      const aTime = a.statusChangedAt ? new Date(a.statusChangedAt) : new Date(a.timestamp);
+      const bTime = b.statusChangedAt ? new Date(b.statusChangedAt) : new Date(b.timestamp);
+
+      if (sortOrder === "newest" || sortOrder === "oldest") {
+        return sortOrder === "newest"
+          ? bTime.getTime() - aTime.getTime()
+          : aTime.getTime() - bTime.getTime();
+      }
     }
+
+    // Handle score-based sorting
+    if (sortOrder === "score_desc" || sortOrder === "score_asc") {
+      return sortOrder === "score_desc"
+        ? b.score - a.score
+        : a.score - b.score;
+    }
+
+    // For pending tab time sorting or default case
+    const aTime = new Date(a.timestamp);
+    const bTime = new Date(b.timestamp);
+    return sortOrder === "newest" || sortOrder === undefined
+      ? bTime.getTime() - aTime.getTime()
+      : aTime.getTime() - bTime.getTime();
   });
 
   // Reset filters
