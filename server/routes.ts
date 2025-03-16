@@ -224,59 +224,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let totalProcessed = 0;
       let totalAnalyzed = 0;
       const errors: string[] = [];
+      const BATCH_SIZE = 5; // Process 5 subreddits at a time
 
-      for (const subreddit of subreddits) {
-        if (!subreddit.isActive) continue;
-        console.log(`Processing subreddit: r/${subreddit.name}`);
+      // Process subreddits in batches
+      for (let i = 0; i < subreddits.length; i += BATCH_SIZE) {
+        const batch = subreddits.slice(i, i + BATCH_SIZE);
+        console.log(`Processing batch ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(subreddits.length/BATCH_SIZE)}`);
 
-        try {
-          // Fetch posts and comments
-          const posts = await redditClient.getNewPosts(subreddit.name, config.postsPerFetch);
-          console.log(`Found ${posts.length} posts in r/${subreddit.name}`);
-          const comments = await redditClient.getNewComments(subreddit.name, config.postsPerFetch);
-          console.log(`Found ${comments.length} comments in r/${subreddit.name}`);
+        await Promise.all(batch.map(async (subreddit) => {
+          if (!subreddit.isActive) return;
+          console.log(`Processing subreddit: r/${subreddit.name}`);
 
-          // Get existing post IDs to avoid duplicates
-          const existingPostIds = await storage.getProcessedPostIds();
-          const allContent = [...posts, ...comments];
-          const newContent = allContent.filter(content => !existingPostIds.includes(content.postId));
+          try {
+            // Fetch posts and comments
+            const posts = await redditClient.getNewPosts(subreddit.name, config.postsPerFetch);
+            console.log(`Found ${posts.length} posts in r/${subreddit.name}`);
+            const comments = await redditClient.getNewComments(subreddit.name, config.postsPerFetch);
+            console.log(`Found ${comments.length} comments in r/${subreddit.name}`);
 
-          console.log(`Found ${newContent.length} new items to process out of ${allContent.length} total items`);
+            // Get existing post IDs to avoid duplicates
+            const existingPostIds = await storage.getProcessedPostIds();
+            const allContent = [...posts, ...comments];
+            const newContent = allContent.filter(content => !existingPostIds.includes(content.postId));
 
-          for (const content of newContent) {
-            try {
-              totalAnalyzed++;
-              console.log(`Analyzing content from ${content.author} in r/${subreddit.name}`);
-              const analysis = await analyzeContent(
-                content.title + "\n" + content.content,
-                config.openAiPrompt
-              );
+            console.log(`Found ${newContent.length} new items to process out of ${allContent.length} total items`);
 
-              console.log(`Content analysis score: ${analysis.score}, threshold: ${config.scoreThreshold}`);
-              if (analysis.score >= config.scoreThreshold) {
-                const post = {
-                  ...content,
-                  score: analysis.score,
-                  analysis: analysis,
-                  suggestedReply: analysis.suggestedReply,
-                  status: "pending"
-                };
+            for (const content of newContent) {
+              try {
+                totalAnalyzed++;
+                console.log(`Analyzing content from ${content.author} in r/${subreddit.name}`);
+                const analysis = await analyzeContent(
+                  content.title + "\n" + content.content,
+                  config.openAiPrompt
+                );
 
-                await storage.addPost(post);
-                totalProcessed++;
-                console.log(`Added post with score ${analysis.score}`);
+                console.log(`Content analysis score: ${analysis.score}, threshold: ${config.scoreThreshold}`);
+                if (analysis.score >= config.scoreThreshold) {
+                  const post = {
+                    ...content,
+                    score: analysis.score,
+                    analysis: analysis,
+                    suggestedReply: analysis.suggestedReply,
+                    status: "pending"
+                  };
+
+                  await storage.addPost(post);
+                  totalProcessed++;
+                  console.log(`Added post with score ${analysis.score}`);
+                }
+              } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                errors.push(`Failed to analyze content: ${errorMessage}`);
+                console.error(`Analysis error: ${errorMessage}`);
               }
-            } catch (error) {
-              const errorMessage = error instanceof Error ? error.message : String(error);
-              errors.push(`Failed to analyze content: ${errorMessage}`);
-              console.error(`Analysis error: ${errorMessage}`);
             }
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            errors.push(`Failed to fetch from r/${subreddit.name}: ${errorMessage}`);
+            console.error(`Subreddit fetch error: ${errorMessage}`);
           }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          errors.push(`Failed to fetch from r/${subreddit.name}: ${errorMessage}`);
-          console.error(`Subreddit fetch error: ${errorMessage}`);
-        }
+        }));
       }
 
       if (errors.length > 0) {

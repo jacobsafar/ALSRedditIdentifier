@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -16,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Settings, RefreshCw, Loader2, Trash2, Ban } from "lucide-react";
+import { Settings, RefreshCw, Loader2, Trash2, Ban, Filter } from "lucide-react";
 import PostCard from "@/components/post-card";
 import type { MonitoredPost } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
@@ -25,10 +32,27 @@ export default function Dashboard() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("pending");
   const [fetchStatus, setFetchStatus] = useState("");
+  const [selectedSubreddit, setSelectedSubreddit] = useState<string>("all");
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ["/api/posts", activeTab],
     queryFn: () => fetch(`/api/posts?status=${activeTab}`).then(r => r.json())
+  });
+
+  // Extract unique subreddits from posts
+  const uniqueSubreddits = Array.from(new Set(posts?.map((post: MonitoredPost) => post.subreddit) || [])).sort();
+
+  // Filter posts based on selected subreddit
+  const filteredPosts = selectedSubreddit === "all" 
+    ? posts 
+    : posts?.filter((post: MonitoredPost) => post.subreddit === selectedSubreddit);
+
+  // Sort posts by score and timestamp
+  const sortedPosts = filteredPosts?.sort((a: MonitoredPost, b: MonitoredPost) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
   });
 
   const fetchMutation = useMutation({
@@ -107,16 +131,7 @@ export default function Dashboard() {
     }
   });
 
-  // Sort posts by score in descending order and then by timestamp
-  const sortedPosts = posts?.sort((a: MonitoredPost, b: MonitoredPost) => {
-    if (b.score !== a.score) {
-      return b.score - a.score;
-    }
-    // If scores are equal, sort by timestamp (newest first)
-    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-  });
-
-  // Separate high-priority (score >= 8) from normal priority posts
+  // Separate high-priority posts
   const highPriorityPosts = sortedPosts?.filter((post: MonitoredPost) => post.score >= 8);
   const normalPriorityPosts = sortedPosts?.filter((post: MonitoredPost) => post.score < 8);
 
@@ -216,6 +231,26 @@ export default function Dashboard() {
           <TabsTrigger value="ignored">Ignored</TabsTrigger>
         </TabsList>
 
+        {/* Subreddit Filter - Only show on pending tab */}
+        {activeTab === "pending" && uniqueSubreddits.length > 0 && (
+          <div className="flex items-center gap-2 mb-4">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={selectedSubreddit} onValueChange={setSelectedSubreddit}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filter by subreddit" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Subreddits</SelectItem>
+                {uniqueSubreddits.map(subreddit => (
+                  <SelectItem key={subreddit} value={subreddit}>
+                    r/{subreddit}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="grid gap-4">
             {[1, 2, 3].map(i => (
@@ -258,6 +293,7 @@ export default function Dashboard() {
             {(!highPriorityPosts?.length && !normalPriorityPosts?.length) && (
               <Card className="p-6 text-center text-muted-foreground">
                 No {activeTab} posts found
+                {selectedSubreddit !== "all" && " in r/" + selectedSubreddit}
               </Card>
             )}
           </div>
