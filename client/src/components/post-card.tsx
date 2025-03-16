@@ -254,22 +254,24 @@ export default function PostCard({ post }: PostCardProps) {
       </CardContent>
 
       {post.status === "pending" && (
-        <CardFooter className="flex justify-end gap-2">
-          <Button
-            onClick={() => updateStatusMutation.mutate("replied")}
-            disabled={updateStatusMutation.isPending}
-          >
-            <Check className="mr-2 h-4 w-4" />
-            Mark as Replied
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => updateStatusMutation.mutate("ignored")}
-            disabled={updateStatusMutation.isPending}
-          >
-            <X className="mr-2 h-4 w-4" />
-            Ignore Post
-          </Button>
+        <CardFooter className="flex justify-between gap-2">
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => updateStatusMutation.mutate("ignored")}
+              disabled={updateStatusMutation.isPending}
+            >
+              <X className="mr-2 h-4 w-4" />
+              Ignore Post
+            </Button>
+            <Button
+              onClick={() => updateStatusMutation.mutate("replied")}
+              disabled={updateStatusMutation.isPending}
+            >
+              <Check className="mr-2 h-4 w-4" />
+              Mark as Replied
+            </Button>
+          </div>
           <Button
             size="sm"
             onClick={copyAndMarkReplied}
