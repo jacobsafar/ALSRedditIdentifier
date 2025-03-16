@@ -79,7 +79,7 @@ export default function PostCard({ post }: PostCardProps) {
       window.open(post.url, '_blank');
 
       // Copy reply with appended extension link
-      const replyWithExtension = `${post.suggestedReply}\n\n[Reply generated with AIBlock - Download our Chrome extension to protect yourself from AI content](https://chrome.google.com/webstore/detail/aiblock)`;
+      const replyWithExtension = `${post.suggestedReply}\n\n[AIBlock Chrome Extension](https://chromewebstore.google.com/detail/aiblock-block-ai-images-a/mkmlbghcbklnojegbkcdhfonmmopgdc?authuser=0&hl=en)`;
       await navigator.clipboard.writeText(replyWithExtension);
 
       // Mark as replied
