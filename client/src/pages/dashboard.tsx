@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -34,6 +34,26 @@ export default function Dashboard() {
   const [fetchStatus, setFetchStatus] = useState("");
   const [selectedSubreddit, setSelectedSubreddit] = useState<string>("all");
 
+  // Get config for auto-fetch interval
+  const { data: config } = useQuery({
+    queryKey: ["/api/config"],
+    queryFn: () => fetch("/api/config").then(r => r.json())
+  });
+
+  // Setup auto-fetch interval
+  useEffect(() => {
+    if (!config?.checkFrequency) return;
+
+    const intervalId = setInterval(() => {
+      // Only fetch if we're not already fetching
+      if (!fetchMutation.isPending) {
+        fetchMutation.mutate();
+      }
+    }, config.checkFrequency * 1000); // Convert seconds to milliseconds
+
+    return () => clearInterval(intervalId);
+  }, [config?.checkFrequency]);
+
   const { data: posts, isLoading } = useQuery({
     queryKey: ["/api/posts", activeTab],
     queryFn: () => fetch(`/api/posts?status=${activeTab}`).then(r => r.json())
@@ -43,8 +63,8 @@ export default function Dashboard() {
   const uniqueSubreddits = Array.from(new Set(posts?.map((post: MonitoredPost) => post.subreddit) || [])).sort();
 
   // Filter posts based on selected subreddit
-  const filteredPosts = selectedSubreddit === "all" 
-    ? posts 
+  const filteredPosts = selectedSubreddit === "all"
+    ? posts
     : posts?.filter((post: MonitoredPost) => post.subreddit === selectedSubreddit);
 
   // Sort posts by score and timestamp
@@ -74,13 +94,13 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
 
       if (data.errors?.length > 0) {
-        toast({ 
+        toast({
           title: data.message,
           description: data.errors.join('\n'),
           variant: "destructive"
         });
       } else {
-        toast({ 
+        toast({
           title: "Content fetch complete",
           description: data.message,
           variant: "default"
@@ -90,7 +110,7 @@ export default function Dashboard() {
       setTimeout(() => setFetchStatus(""), 3000);
     },
     onError: (error: Error) => {
-      toast({ 
+      toast({
         title: "Error fetching content",
         description: error.message,
         variant: "destructive"
@@ -179,7 +199,7 @@ export default function Dashboard() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction 
+              <AlertDialogAction
                 onClick={() => clearAllMutation.mutate()}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
