@@ -154,12 +154,7 @@ export default function Settings() {
     }) => {
       try {
         // Generate the system prompt from the form fields
-        const systemPrompt = generateSystemPrompt({
-          basePrompt: data.basePrompt,
-          scoringCriteria: data.scoringCriteria,
-          analysisGuidance: data.analysisGuidance,
-          replyStyle: data.replyStyle
-        });
+        const systemPrompt = generateSystemPrompt(data);
 
         // Send only the Config fields to the API
         const configData: Config = {
@@ -255,10 +250,10 @@ export default function Settings() {
                         <FormItem>
                           <FormLabel>Check Frequency (hours)</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="number" 
-                              min={0.5} 
-                              max={12} 
+                            <Input
+                              type="number"
+                              min={0.5}
+                              max={12}
                               step={0.5}
                               {...field}
                               onChange={e => field.onChange(Number(e.target.value))}
