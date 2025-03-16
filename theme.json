@@ -1,7 +1,7 @@
 {
   "variant": "vibrant",
   "primary": "hsl(265, 84%, 45%)",
-  "appearance": "light",
+  "appearance": "system",
   "radius": 1,
   "animations": {
     "button": "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",

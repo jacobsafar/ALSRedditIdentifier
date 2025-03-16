@@ -102,7 +102,7 @@ export default function PostCard({ post }: PostCardProps) {
 
   return (
     <Card className={cn(
-      "transition-all duration-500 ease-in-out transform hover:scale-[1.02] hover:shadow-xl bg-white",
+      "transition-all duration-500 ease-in-out transform hover:scale-[1.02] hover:shadow-xl bg-background",
       post.score >= 9 && "border-red-200 shadow-glow-soft-red",
       post.score >= 7 && post.score < 9 && "border-orange-200 shadow-glow-soft-orange"
     )}>
@@ -141,7 +141,7 @@ export default function PostCard({ post }: PostCardProps) {
             <h4 className="font-medium mb-1">Title</h4>
             <p className={cn(
               "text-lg transition-all duration-300 group-hover:scale-[1.01]",
-              post.score >= 8 && "font-semibold text-red-900"
+              post.score >= 8 && "font-semibold text-red-900 dark:text-red-400"
             )}>{post.title}</p>
           </div>
         )}
@@ -155,119 +155,26 @@ export default function PostCard({ post }: PostCardProps) {
           <h4 className="font-medium mb-1">Analysis</h4>
           <p className={cn(
             "text-muted-foreground transition-colors duration-300",
-            post.score >= 8 && "text-red-700"
+            post.score >= 8 && "text-red-700 dark:text-red-400"
           )}>{analysis.analysis}</p>
         </div>
 
         {post.suggestedReply && (
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <h4 className="font-medium">Suggested Reply</h4>
-              <div className="flex gap-2">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="transition-all duration-300 hover:bg-muted/80 hover:shadow-md"
-                    >
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Regenerate Reply
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Regenerate Reply</DialogTitle>
-                      <DialogDescription>
-                        Enter a custom prompt to generate a new reply for this content.
-                        Leave blank to use the default system prompt.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <Textarea
-                      value={customPrompt}
-                      onChange={(e) => setCustomPrompt(e.target.value)}
-                      placeholder="Enter custom prompt or leave blank for default"
-                      className="min-h-[100px]"
-                    />
-                    <DialogFooter className="mt-4">
-                      <Button
-                        onClick={() => regenerateReplyMutation.mutate(customPrompt)}
-                        disabled={regenerateReplyMutation.isPending}
-                      >
-                        {regenerateReplyMutation.isPending && (
-                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                        )}
-                        Regenerate Reply
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                <Button
-                  size="sm"
-                  onClick={copyAndMarkReplied}
-                  disabled={updateStatusMutation.isPending}
-                  className="bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:shadow-glow-purple transition-all duration-300 transform hover:-translate-y-1"
-                >
-                  Copy & Open in Reddit
-                  <ExternalLink className="ml-2 h-4 w-4" />
-                </Button>
+            <div className="relative border rounded-lg p-4 group hover:border-primary/50 transition-all duration-300 hover:shadow-glow-soft-purple">
+              <Button
+                variant="outline"
+                size="sm"
+                className="shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 hover:shadow-glow-purple"
+                onClick={() => setIsEditing(true)}
+              >
+                <Edit2 className="mr-2 h-4 w-4" />
+                Edit Reply
+              </Button>
+              <div className="text-muted-foreground group-hover:text-foreground pr-[100px] transition-all duration-300 whitespace-pre-wrap">
+                {post.suggestedReply}
               </div>
             </div>
-
-            {isEditing ? (
-              <div className="space-y-2 border rounded-lg p-4 bg-gradient-to-br from-purple-50 to-violet-50/30 transition-all duration-300 animate-in fade-in-0 shadow-glow-soft-purple">
-                <div className="flex items-center gap-2 mb-2">
-                  <Edit2 className="h-4 w-4" />
-                  <span className="font-medium">Editing Reply</span>
-                </div>
-                <Textarea
-                  value={editedReply}
-                  onChange={(e) => setEditedReply(e.target.value)}
-                  className="min-h-[150px] bg-white resize-y transition-all duration-300 focus:shadow-glow-soft-purple"
-                  placeholder="Edit your reply here..."
-                />
-                <div className="flex justify-end gap-2 mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditedReply(post.suggestedReply || "");
-                      setIsEditing(false);
-                    }}
-                    className="transition-all duration-300 hover:bg-red-50"
-                  >
-                    <X className="mr-2 h-4 w-4" />
-                    Cancel Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => saveReplyMutation.mutate(editedReply)}
-                    disabled={saveReplyMutation.isPending}
-                    className="bg-gradient-to-r from-green-500 to-emerald-600 text-white transition-all duration-300 hover:shadow-glow-green"
-                  >
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Changes
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="relative border rounded-lg p-4 group hover:border-primary/50 transition-all duration-300 hover:shadow-glow-soft-purple bg-white">
-                <div className="absolute top-2 right-2 z-10">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 hover:shadow-glow-purple"
-                    onClick={() => setIsEditing(true)}
-                  >
-                    <Edit2 className="mr-2 h-4 w-4" />
-                    Edit Reply
-                  </Button>
-                </div>
-                <div className="text-muted-foreground group-hover:text-foreground pr-[100px] transition-all duration-300 whitespace-pre-wrap">
-                  {post.suggestedReply}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </CardContent>
@@ -278,7 +185,7 @@ export default function PostCard({ post }: PostCardProps) {
             variant="outline"
             onClick={() => updateStatusMutation.mutate("ignored")}
             disabled={updateStatusMutation.isPending}
-            className="transition-all duration-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+            className="transition-all duration-300 hover:bg-red-100 dark:hover:bg-red-900/10 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200"
           >
             <X className="mr-2 h-4 w-4" />
             Ignore Post
