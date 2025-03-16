@@ -18,7 +18,7 @@ export async function analyzeContent(
         "\nRespond with a JSON object in the following format: { 'score': number between 1-10, 'analysis': string, 'suggestedReply': string }";
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
@@ -50,7 +50,8 @@ export async function regenerateReply(
   customPrompt?: string,
 ): Promise<string> {
   try {
-    const defaultPrompt = "You are an AI assistant generating a courteous and factual reply to a Reddit comment or post about AI technology. Generate a 1-2 sentence response that addresses their concerns and provides accurate information.";
+    const defaultPrompt =
+      "You are an AI assistant generating a courteous and factual reply to a Reddit comment or post about AI technology. Generate a 1-2 sentence response that addresses their concerns and provides accurate information.";
 
     const response = await openai.chat.completions.create({
       model: "gpt-4",
