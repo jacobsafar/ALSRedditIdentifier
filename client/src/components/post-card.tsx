@@ -83,7 +83,7 @@ export default function PostCard({ post }: PostCardProps) {
       toast({ title: "Post opened and reply copied" });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      toast({ 
+      toast({
         title: "Failed to process",
         description: errorMessage,
         variant: "destructive"
@@ -194,14 +194,14 @@ export default function PostCard({ post }: PostCardProps) {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     onClick={copyAndMarkReplied}
                     disabled={updateStatusMutation.isPending}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
                   >
-                    <ExternalLink className="mr-2 h-4 w-4" />
                     Copy & Open in Reddit
+                    <ExternalLink className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -252,7 +252,7 @@ export default function PostCard({ post }: PostCardProps) {
                       Edit Reply
                     </Button>
                   </div>
-                  <div 
+                  <div
                     className="text-muted-foreground group-hover:text-foreground pr-[100px] transition-colors whitespace-pre-wrap"
                   >
                     {post.suggestedReply}
