@@ -10,11 +10,12 @@ export interface IStorage {
   updateSubredditStatus(id: number, isActive: number): Promise<void>;
 
   // Post management
-  getPosts(filter?: { status?: string }): Promise<MonitoredPost[]>;
+  getPosts(filter?: { status?: string; id?: number }): Promise<MonitoredPost[]>;
   addPost(post: InsertPost): Promise<MonitoredPost>;
   updatePostStatus(id: number, status: string): Promise<void>;
   clearAllPosts(): Promise<void>;
   ignoreAllPendingPosts(): Promise<void>;
+  updatePostAnalysis(id: number, analysis: { score: number; analysis: any; suggestedReply: string }): Promise<void>;
 
   // Config management
   getConfig(): Promise<Config>;
@@ -60,10 +61,13 @@ Please analyze the following text and respond with a JSON object containing:
       .where(eq(monitoredSubreddits.id, id));
   }
 
-  async getPosts(filter?: { status?: string }): Promise<MonitoredPost[]> {
+  async getPosts(filter?: { status?: string; id?: number }): Promise<MonitoredPost[]> {
     let query = db.select().from(monitoredPosts);
     if (filter?.status) {
       query = query.where(eq(monitoredPosts.status, filter.status));
+    }
+    if (filter?.id) {
+      query = query.where(eq(monitoredPosts.id, filter.id));
     }
     return await query;
   }
@@ -107,6 +111,17 @@ Please analyze the following text and respond with a JSON object containing:
   async getProcessedPostIds(): Promise<string[]> {
     const posts = await db.select({ postId: monitoredPosts.postId }).from(monitoredPosts);
     return posts.map(post => post.postId);
+  }
+
+  async updatePostAnalysis(id: number, analysis: { score: number; analysis: any; suggestedReply: string }): Promise<void> {
+    await db
+      .update(monitoredPosts)
+      .set({
+        score: analysis.score,
+        analysis: analysis.analysis,
+        suggestedReply: analysis.suggestedReply
+      })
+      .where(eq(monitoredPosts.id, id));
   }
 }
 

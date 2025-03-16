@@ -2,22 +2,55 @@ import { useMutation } from "@tanstack/react-query";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Copy, Check, X, AlertTriangle } from "lucide-react";
+import { ExternalLink, Copy, Check, X, AlertTriangle, RefreshCw } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import type { MonitoredPost } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface PostCardProps {
   post: MonitoredPost;
 }
 
 export default function PostCard({ post }: PostCardProps) {
+  const { toast } = useToast();
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
   const updateStatusMutation = useMutation({
     mutationFn: (status: string) =>
       apiRequest("PATCH", `/api/posts/${post.id}/status`, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+    }
+  });
+
+  const regenerateReplyMutation = useMutation({
+    mutationFn: (prompt: string) =>
+      apiRequest("POST", `/api/posts/${post.id}/regenerate-reply`, { customPrompt: prompt }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      setIsDialogOpen(false);
+      toast({ title: "Reply regenerated successfully" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to regenerate reply",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   });
 
@@ -91,9 +124,45 @@ export default function PostCard({ post }: PostCardProps) {
           <div>
             <div className="flex items-center justify-between mb-1">
               <h4 className="font-medium">Suggested Reply</h4>
-              <Button variant="ghost" size="sm" onClick={copyToClipboard}>
-                <Copy className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-2">
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Regenerate
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Regenerate Reply</DialogTitle>
+                      <DialogDescription>
+                        Enter a custom prompt to generate a new reply for this content.
+                        Leave blank to use the default system prompt.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <Textarea
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      placeholder="Enter custom prompt or leave blank for default"
+                      className="min-h-[100px]"
+                    />
+                    <DialogFooter className="mt-4">
+                      <Button
+                        onClick={() => regenerateReplyMutation.mutate(customPrompt)}
+                        disabled={regenerateReplyMutation.isPending}
+                      >
+                        {regenerateReplyMutation.isPending && (
+                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Regenerate Reply
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+                <Button variant="ghost" size="sm" onClick={copyToClipboard}>
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <p className="text-muted-foreground">{post.suggestedReply}</p>
           </div>
