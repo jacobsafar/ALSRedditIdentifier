@@ -34,6 +34,7 @@ import { format } from "date-fns";
 import PostCard from "@/components/post-card";
 import type { MonitoredPost } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
+import React from 'react';
 
 export default function Dashboard() {
   const { toast } = useToast();
