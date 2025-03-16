@@ -2,6 +2,7 @@ import Snoowrap from "snoowrap";
 
 export class RedditClient {
   private client: Snoowrap;
+  private readonly BOT_USERNAME = "AIBlock_Extension";
 
   constructor() {
     if (!process.env.REDDIT_CLIENT_ID || !process.env.REDDIT_CLIENT_SECRET || 
@@ -35,15 +36,19 @@ export class RedditClient {
 
       const posts = await this.client.getSubreddit(subredditName).getNew({ limit });
       console.log(`Successfully fetched ${posts.length} posts`);
-      return posts.map(post => ({
-        postId: post.id,
-        subreddit: post.subreddit.display_name,
-        author: post.author.name,
-        title: post.title,
-        content: post.selftext || "",
-        url: `https://reddit.com${post.permalink}`,
-        timestamp: new Date(post.created_utc * 1000),
-      }));
+
+      // Filter out posts from our bot account and map to our format
+      return posts
+        .filter(post => post.author.name !== this.BOT_USERNAME)
+        .map(post => ({
+          postId: post.id,
+          subreddit: post.subreddit.display_name,
+          author: post.author.name,
+          title: post.title,
+          content: post.selftext || "",
+          url: `https://reddit.com${post.permalink}`,
+          timestamp: new Date(post.created_utc * 1000),
+        }));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`Reddit API error (posts): ${errorMessage}`);
@@ -58,15 +63,19 @@ export class RedditClient {
       console.log(`Fetching comments from r/${subredditName}`);
       const comments = await this.client.getSubreddit(subredditName).getNewComments({ limit });
       console.log(`Successfully fetched ${comments.length} comments`);
-      return comments.map(comment => ({
-        postId: comment.id,
-        subreddit: comment.subreddit.display_name,
-        author: comment.author.name,
-        title: "",
-        content: comment.body,
-        url: `https://reddit.com${comment.permalink}`,
-        timestamp: new Date(comment.created_utc * 1000),
-      }));
+
+      // Filter out comments from our bot account and map to our format
+      return comments
+        .filter(comment => comment.author.name !== this.BOT_USERNAME)
+        .map(comment => ({
+          postId: comment.id,
+          subreddit: comment.subreddit.display_name,
+          author: comment.author.name,
+          title: "",
+          content: comment.body,
+          url: `https://reddit.com${comment.permalink}`,
+          timestamp: new Date(comment.created_utc * 1000),
+        }));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`Reddit API error (comments): ${errorMessage}`);
