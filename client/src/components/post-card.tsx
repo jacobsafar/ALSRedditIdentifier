@@ -17,7 +17,7 @@ import type { MonitoredPost } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 
@@ -31,6 +31,11 @@ export default function PostCard({ post }: PostCardProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editedReply, setEditedReply] = useState(post.suggestedReply || "");
   const [isEditing, setIsEditing] = useState(false);
+
+  // Update editedReply whenever post.suggestedReply changes
+  useEffect(() => {
+    setEditedReply(post.suggestedReply || "");
+  }, [post.suggestedReply]);
 
   const updateStatusMutation = useMutation({
     mutationFn: (status: string) =>
