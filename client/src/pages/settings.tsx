@@ -43,7 +43,6 @@ const generateSystemPrompt = (values: {
 
   // Log generated prompt for debugging
   const generatedPrompt = `${basePrompt}
-
 Please analyze the following text and respond with a JSON object containing:
 {
   "score": number between 1-10 where ${scoringCriteria},
@@ -70,24 +69,34 @@ const parseSystemPrompt = (prompt: string) => {
     // Extract the base prompt - everything before the JSON format instructions
     const basePromptMatch = prompt.split("Please analyze the following text")[0].trim();
 
-    // Extract components using clearer patterns that match the actual format
-    const scoringCriteria = prompt.match(/where\s+(.*?)(?=,|\})/)?.[1]?.trim();
-    const analysisMatch = prompt.match(/"analysis":\s*(.*?)(?=,|\})/)?.[1]?.trim();
-    const replyMatch = prompt.match(/"suggestedReply":\s*(.*?)(?=\})/)?.[1]?.trim();
+    // Use more precise patterns that match the actual JSON-like structure
+    const lines = prompt.split('\n');
+    let scoringCriteria = '';
+    let analysisGuidance = '';
+    let replyStyle = '';
 
-    // Log parsed values for debugging
-    console.log('Parsed values:', {
+    for (const line of lines) {
+      if (line.includes('"score"')) {
+        scoringCriteria = line.match(/where\s+(.*?)(?=,|\s*$)/)?.[1]?.trim() || '';
+      } else if (line.includes('"analysis"')) {
+        analysisGuidance = line.match(/analysis":\s*(.*?)(?=,|\s*$)/)?.[1]?.trim() || '';
+      } else if (line.includes('"suggestedReply"')) {
+        replyStyle = line.match(/suggestedReply":\s*(.*?)(?=\s*}|\s*$)/)?.[1]?.trim() || '';
+      }
+    }
+
+    console.log('Parsed settings:', {
       basePrompt: basePromptMatch,
       scoringCriteria,
-      analysis: analysisMatch,
-      reply: replyMatch
+      analysisGuidance,
+      replyStyle
     });
 
     return {
       basePrompt: basePromptMatch || defaultValues.basePrompt,
       scoringCriteria: scoringCriteria || defaultValues.scoringCriteria,
-      analysisGuidance: analysisMatch || defaultValues.analysisGuidance,
-      replyStyle: replyMatch || defaultValues.replyStyle,
+      analysisGuidance: analysisGuidance || defaultValues.analysisGuidance,
+      replyStyle: replyStyle || defaultValues.replyStyle,
     };
   } catch (error) {
     console.error('Error parsing system prompt:', error);
