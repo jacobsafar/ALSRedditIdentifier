@@ -12,12 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,25 +23,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Settings, RefreshCw, Loader2, Trash2, Ban, Filter, CalendarIcon, X } from "lucide-react";
-import { format } from "date-fns";
+import { Settings, RefreshCw, Loader2, Trash2, Ban, Filter, ArrowUpDown, X } from "lucide-react";
 import PostCard from "@/components/post-card";
 import type { MonitoredPost } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
 import React from 'react';
+
+type SortOrder = "score_desc" | "score_asc" | "newest" | "oldest";
 
 export default function Dashboard() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("pending");
   const [fetchStatus, setFetchStatus] = useState("");
   const [selectedSubreddit, setSelectedSubreddit] = useState<string>("all");
-  const [dateRange, setDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>({
-    from: undefined,
-    to: undefined,
-  });
+  const [sortOrder, setSortOrder] = useState<SortOrder>("score_desc");
 
   // Get config for auto-fetch interval
   const { data: config } = useQuery({
@@ -77,42 +66,29 @@ export default function Dashboard() {
   // Extract unique subreddits from posts
   const uniqueSubreddits = Array.from(new Set(posts?.map((post: MonitoredPost) => post.subreddit) || [])).sort();
 
-  // Filter posts based on selected subreddit and date range
+  // Filter posts based on selected subreddit
   const filteredPosts = posts?.filter((post: MonitoredPost) => {
     // Filter by subreddit if one is selected
     if (selectedSubreddit !== "all" && post.subreddit !== selectedSubreddit) {
       return false;
     }
-
-    // Filter by date range if set
-    if (dateRange.from || dateRange.to) {
-      const postDate = new Date(post.timestamp);
-      if (dateRange.from && postDate < dateRange.from) {
-        return false;
-      }
-      if (dateRange.to) {
-        const endOfDay = new Date(dateRange.to);
-        endOfDay.setHours(23, 59, 59, 999);
-        if (postDate > endOfDay) {
-          return false;
-        }
-      }
-    }
-
     return true;
   });
 
   // Sort posts based on active tab and criteria
   const sortedPosts = filteredPosts?.sort((a: MonitoredPost, b: MonitoredPost) => {
-    // For pending tab, sort by score first, then by timestamp
-    if (activeTab === "pending") {
-      if (b.score !== a.score) {
+    switch (sortOrder) {
+      case "score_desc":
         return b.score - a.score;
-      }
-      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      case "score_asc":
+        return a.score - b.score;
+      case "newest":
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      case "oldest":
+        return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+      default:
+        return 0;
     }
-    // For replied/ignored tabs, sort by status change time
-    return new Date(b.statusChangedAt || b.timestamp).getTime() - new Date(a.statusChangedAt || a.timestamp).getTime();
   });
 
   // Separate high-priority posts (only for pending tab)
@@ -126,7 +102,7 @@ export default function Dashboard() {
   // Reset filters
   const resetFilters = () => {
     setSelectedSubreddit("all");
-    setDateRange({ from: undefined, to: undefined });
+    setSortOrder("score_desc");
   };
 
   const fetchMutation = useMutation({
@@ -322,44 +298,22 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={dateRange.from ? "text-primary" : ""}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange.from ? (
-                      dateRange.to ? (
-                        <>
-                          {format(dateRange.from, "LLL dd, y")} -{" "}
-                          {format(dateRange.to, "LLL dd, y")}
-                        </>
-                      ) : (
-                        format(dateRange.from, "LLL dd, y")
-                      )
-                    ) : (
-                      "Filter by date"
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    selected={{ 
-                      from: dateRange.from,
-                      to: dateRange.to 
-                    }}
-                    onSelect={(range: any) => setDateRange(range)}
-                    numberOfMonths={2}
-                  />
-                </PopoverContent>
-              </Popover>
+              <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+              <Select value={sortOrder} onValueChange={(value: SortOrder) => setSortOrder(value)}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="score_desc">Highest Score First</SelectItem>
+                  <SelectItem value="score_asc">Lowest Score First</SelectItem>
+                  <SelectItem value="newest">Newest First</SelectItem>
+                  <SelectItem value="oldest">Oldest First</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Reset Filters Button */}
-            {(selectedSubreddit !== "all" || dateRange.from) && (
+            {(selectedSubreddit !== "all" || sortOrder !== "score_desc") && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -429,7 +383,6 @@ export default function Dashboard() {
               <Card className="p-6 text-center text-muted-foreground">
                 No {activeTab} posts found
                 {selectedSubreddit !== "all" && " in r/" + selectedSubreddit}
-                {dateRange.from && ` between ${format(dateRange.from, "LLL dd, y")} and ${format(dateRange.to || dateRange.from, "LLL dd, y")}`}
               </Card>
             )}
           </div>
