@@ -49,7 +49,7 @@ export default function PostCard({ post }: PostCardProps) {
   const regenerateReplyMutation = useMutation({
     mutationFn: (prompt: string) =>
       apiRequest("POST", `/api/posts/${post.id}/regenerate-reply`, { customPrompt: prompt }),
-    onSuccess: (data) => {
+    onSuccess: (data: { suggestedReply: string }) => {
       // Update the editedReply state with the new reply
       setEditedReply(data.suggestedReply);
       // Only close dialog after successful regeneration
