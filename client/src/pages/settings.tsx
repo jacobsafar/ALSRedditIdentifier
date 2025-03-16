@@ -119,7 +119,7 @@ export default function Settings() {
 
   // Update form values when config is loaded
   React.useEffect(() => {
-    if (config) {
+    if (config && !configForm.formState.isDirty) {  // Only reset if form is not dirty
       try {
         const promptFields = parseSystemPrompt(config.openAiPrompt);
         configForm.reset({
@@ -135,7 +135,7 @@ export default function Settings() {
         });
       }
     }
-  }, [config]);
+  }, [config]);  // Only depend on config changes, not other form state
 
   const subredditForm = useForm({
     resolver: zodResolver(insertSubredditSchema),
@@ -173,6 +173,7 @@ export default function Settings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/config"] });
       toast({ title: "Settings updated successfully" });
+      // Do not reset the form here
     },
     onError: (error: Error) => {
       toast({
