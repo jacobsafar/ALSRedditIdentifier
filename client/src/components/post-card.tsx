@@ -87,9 +87,10 @@ export default function PostCard({ post }: PostCardProps) {
 
       toast({ title: "Post opened and reply copied" });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       toast({ 
         title: "Failed to process",
-        description: error instanceof Error ? error.message : "Unknown error",
+        description: errorMessage,
         variant: "destructive"
       });
     }

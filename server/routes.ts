@@ -117,10 +117,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
+      // Get config for system prompt
+      const config = await storage.getConfig();
+
       // Analyze with custom prompt
       const analysis = await analyzeContent(
         post.title + "\n" + post.content,
-        customPrompt || storage.getConfig().openAiPrompt
+        customPrompt || config.openAiPrompt
       );
 
       // Update the post with new analysis while preserving score and status
