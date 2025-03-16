@@ -102,10 +102,9 @@ export default function PostCard({ post }: PostCardProps) {
 
   return (
     <Card className={cn(
-      "transition-all duration-500 ease-in-out transform hover:scale-[1.02] hover:shadow-xl",
-      "bg-gradient-to-br from-white to-purple-50/30",
-      post.score >= 9 && "border-red-200 bg-gradient-to-br from-red-50 to-pink-50/30 shadow-glow-soft-red",
-      post.score >= 7 && post.score < 9 && "border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50/30 shadow-glow-soft-orange"
+      "transition-all duration-500 ease-in-out transform hover:scale-[1.02] hover:shadow-xl bg-white",
+      post.score >= 9 && "border-red-200 shadow-glow-soft-red",
+      post.score >= 7 && post.score < 9 && "border-orange-200 shadow-glow-soft-orange"
     )}>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <div className="flex items-center gap-2">
@@ -224,7 +223,7 @@ export default function PostCard({ post }: PostCardProps) {
                 <Textarea
                   value={editedReply}
                   onChange={(e) => setEditedReply(e.target.value)}
-                  className="min-h-[150px] bg-white/80 resize-y transition-all duration-300 focus:shadow-glow-soft-purple"
+                  className="min-h-[150px] bg-white resize-y transition-all duration-300 focus:shadow-glow-soft-purple"
                   placeholder="Edit your reply here..."
                 />
                 <div className="flex justify-end gap-2 mt-4">
@@ -252,7 +251,7 @@ export default function PostCard({ post }: PostCardProps) {
                 </div>
               </div>
             ) : (
-              <div className="relative border rounded-lg p-4 group hover:border-primary/50 transition-all duration-300 hover:shadow-glow-soft-purple bg-gradient-to-br from-white to-purple-50/30">
+              <div className="relative border rounded-lg p-4 group hover:border-primary/50 transition-all duration-300 hover:shadow-glow-soft-purple bg-white">
                 <div className="absolute top-2 right-2 z-10">
                   <Button
                     variant="outline"
