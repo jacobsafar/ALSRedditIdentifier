@@ -25,6 +25,12 @@ interface PostCardProps {
   post: MonitoredPost;
 }
 
+interface RegenerateReplyResponse {
+  score: number;
+  analysis: string;
+  suggestedReply: string;
+}
+
 export default function PostCard({ post }: PostCardProps) {
   const { toast } = useToast();
   const [customPrompt, setCustomPrompt] = useState("");
@@ -47,7 +53,7 @@ export default function PostCard({ post }: PostCardProps) {
 
   const regenerateReplyMutation = useMutation({
     mutationFn: (prompt: string) =>
-      apiRequest("POST", `/api/posts/${post.id}/regenerate-reply`, { customPrompt: prompt }),
+      apiRequest<RegenerateReplyResponse>("POST", `/api/posts/${post.id}/regenerate-reply`, { customPrompt: prompt }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       setIsDialogOpen(false);
