@@ -21,6 +21,7 @@ export const monitoredPosts = pgTable("monitored_posts", {
   analysis: jsonb("analysis").notNull(),
   suggestedReply: text("suggested_reply"),
   status: text("status").notNull().default("pending"), // pending, replied, ignored
+  statusChangedAt: timestamp("status_changed_at"), // New field to track when status changes
 });
 
 // Add config table
@@ -49,6 +50,7 @@ export const insertPostSchema = createInsertSchema(monitoredPosts).pick({
   analysis: true,
   suggestedReply: true,
   status: true,
+  statusChangedAt:true
 });
 
 export type InsertSubreddit = z.infer<typeof insertSubredditSchema>;

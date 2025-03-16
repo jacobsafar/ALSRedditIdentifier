@@ -129,7 +129,10 @@ Please analyze the following text and respond with a JSON object containing:
   async updatePostStatus(id: number, status: string): Promise<void> {
     await db
       .update(monitoredPosts)
-      .set({ status })
+      .set({ 
+        status,
+        statusChangedAt: new Date() 
+      })
       .where(eq(monitoredPosts.id, id));
   }
 

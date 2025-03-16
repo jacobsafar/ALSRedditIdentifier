@@ -74,9 +74,10 @@ export default function Dashboard() {
       if (b.score !== a.score) {
         return b.score - a.score;
       }
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
     }
-    // For all tabs, use timestamp as final sorting criteria (newest first)
-    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    // For replied/ignored tabs, sort by status change time
+    return new Date(b.statusChangedAt || b.timestamp).getTime() - new Date(a.statusChangedAt || a.timestamp).getTime();
   });
 
   // Separate high-priority posts (only for pending tab)
