@@ -77,31 +77,27 @@ export default function Dashboard() {
 
   // Sort posts based on active tab and criteria
   const sortedPosts = [...(filteredPosts || [])].sort((a: MonitoredPost, b: MonitoredPost) => {
-    // For replied/ignored tabs, primarily sort by status change time
-    if (activeTab !== "pending") {
-      const aTime = a.statusChangedAt ? new Date(a.statusChangedAt) : new Date(a.timestamp);
-      const bTime = b.statusChangedAt ? new Date(b.statusChangedAt) : new Date(b.timestamp);
+    const aTime = a.statusChangedAt ? new Date(a.statusChangedAt) : new Date(a.timestamp);
+    const bTime = b.statusChangedAt ? new Date(b.statusChangedAt) : new Date(b.timestamp);
 
-      if (sortOrder === "newest" || sortOrder === "oldest") {
-        return sortOrder === "newest"
-          ? bTime.getTime() - aTime.getTime()
-          : aTime.getTime() - bTime.getTime();
-      }
+    // Handle score-based sorting first
+    if (sortOrder === "score_desc") {
+      return b.score - a.score;
+    }
+    if (sortOrder === "score_asc") {
+      return a.score - b.score;
     }
 
-    // Handle score-based sorting
-    if (sortOrder === "score_desc" || sortOrder === "score_asc") {
-      return sortOrder === "score_desc"
-        ? b.score - a.score
-        : a.score - b.score;
+    // Handle time-based sorting
+    if (sortOrder === "newest") {
+      return bTime.getTime() - aTime.getTime();
+    }
+    if (sortOrder === "oldest") {
+      return aTime.getTime() - bTime.getTime();
     }
 
-    // For pending tab time sorting or default case
-    const aTime = new Date(a.timestamp);
-    const bTime = new Date(b.timestamp);
-    return sortOrder === "newest" || sortOrder === undefined
-      ? bTime.getTime() - aTime.getTime()
-      : aTime.getTime() - bTime.getTime();
+    // Default to score descending for high priority content
+    return b.score - a.score;
   });
 
   // Reset filters
@@ -341,54 +337,63 @@ export default function Dashboard() {
         ) : (
           <div className="space-y-6">
             {/* High Priority Section - Only show for pending tab */}
-            {activeTab === "pending" && sortedPosts?.filter(post => post.score >= 8).length > 0 && (
+            {activeTab === "pending" && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-red-600 flex items-center gap-2">
-                  High Priority Content
-                  <span className="text-sm bg-red-100 text-red-700 px-2 py-1 rounded-full">
-                    {sortedPosts.filter(post => post.score >= 8).length} items
-                  </span>
-                </h2>
-                <div className="grid gap-4">
-                  {sortedPosts
-                    .filter(post => post.score >= 8)
-                    .map((post: MonitoredPost) => (
-                      <PostCard key={post.id} post={post} />
-                    ))}
-                </div>
+                {sortedPosts.filter(post => post.score >= 8).length > 0 && (
+                  <>
+                    <h2 className="text-xl font-semibold text-red-600 flex items-center gap-2">
+                      High Priority Content
+                      <span className="text-sm bg-red-100 text-red-700 px-2 py-1 rounded-full">
+                        {sortedPosts.filter(post => post.score >= 8).length} items
+                      </span>
+                    </h2>
+                    <div className="grid gap-4">
+                      {sortedPosts
+                        .filter(post => post.score >= 8)
+                        .map((post: MonitoredPost) => (
+                          <PostCard key={post.id} post={post} />
+                        ))}
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
             {/* Normal Priority/Replied/Ignored Section */}
-            {sortedPosts?.filter(post => activeTab !== "pending" || post.score < 8).length > 0 && (
-              <div className="space-y-4">
-                {activeTab === "pending" ? (
+            <div className="space-y-4">
+              {(activeTab === "pending" ? sortedPosts.filter(post => post.score < 8).length > 0 : sortedPosts.length > 0) && (
+                <>
                   <h2 className="text-xl font-semibold text-gray-600 flex items-center gap-2">
-                    Normal Priority Content
-                    <span className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-                      {sortedPosts.filter(post => post.score < 8).length} items
-                    </span>
+                    {activeTab === "pending" ? (
+                      <>
+                        Normal Priority Content
+                        <span className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                          {sortedPosts.filter(post => post.score < 8).length} items
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        {activeTab === "replied" ? "Replied Content" : "Ignored Content"}
+                        <span className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                          {sortedPosts.length} items
+                        </span>
+                      </>
+                    )}
                   </h2>
-                ) : (
-                  <h2 className="text-xl font-semibold text-gray-600 flex items-center gap-2">
-                    {activeTab === "replied" ? "Replied Content" : "Ignored Content"}
-                    <span className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-                      {sortedPosts.length} items
-                    </span>
-                  </h2>
-                )}
-                <div className="grid gap-4">
-                  {sortedPosts
-                    .filter(post => activeTab !== "pending" || post.score < 8)
-                    .map((post: MonitoredPost) => (
+                  <div className="grid gap-4">
+                    {(activeTab === "pending"
+                      ? sortedPosts.filter(post => post.score < 8)
+                      : sortedPosts
+                    ).map((post: MonitoredPost) => (
                       <PostCard key={post.id} post={post} />
                     ))}
-                </div>
-              </div>
-            )}
+                  </div>
+                </>
+              )}
+            </div>
 
             {/* Empty State */}
-            {(!sortedPosts?.length) && (
+            {sortedPosts.length === 0 && (
               <Card className="p-6 text-center text-muted-foreground">
                 No {activeTab} posts found
                 {selectedSubreddit !== "all" && " in r/" + selectedSubreddit}
