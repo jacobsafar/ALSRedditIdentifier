@@ -67,13 +67,25 @@ export default function Dashboard() {
     ? posts
     : posts?.filter((post: MonitoredPost) => post.subreddit === selectedSubreddit);
 
-  // Sort posts by score and timestamp
+  // Sort posts based on active tab and criteria
   const sortedPosts = filteredPosts?.sort((a: MonitoredPost, b: MonitoredPost) => {
-    if (b.score !== a.score) {
-      return b.score - a.score;
+    // For pending tab, sort by score first, then by timestamp
+    if (activeTab === "pending") {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
     }
+    // For all tabs, use timestamp as final sorting criteria (newest first)
     return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
   });
+
+  // Separate high-priority posts (only for pending tab)
+  const highPriorityPosts = activeTab === "pending"
+    ? sortedPosts?.filter((post: MonitoredPost) => post.score >= 8)
+    : [];
+  const normalPriorityPosts = activeTab === "pending"
+    ? sortedPosts?.filter((post: MonitoredPost) => post.score < 8)
+    : sortedPosts;
 
   const fetchMutation = useMutation({
     mutationFn: async () => {
@@ -150,10 +162,6 @@ export default function Dashboard() {
       });
     }
   });
-
-  // Separate high-priority posts
-  const highPriorityPosts = sortedPosts?.filter((post: MonitoredPost) => post.score >= 8);
-  const normalPriorityPosts = sortedPosts?.filter((post: MonitoredPost) => post.score < 8);
 
   return (
     <div className="container mx-auto p-6">
@@ -279,12 +287,14 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* High Priority Section */}
-            {highPriorityPosts?.length > 0 && (
+            {/* High Priority Section - Only show for pending tab */}
+            {activeTab === "pending" && highPriorityPosts?.length > 0 && (
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold text-red-600 flex items-center gap-2">
                   High Priority Content
-                  {activeTab === "pending" && <span className="text-sm bg-red-100 text-red-700 px-2 py-1 rounded-full">{highPriorityPosts.length} items</span>}
+                  <span className="text-sm bg-red-100 text-red-700 px-2 py-1 rounded-full">
+                    {highPriorityPosts.length} items
+                  </span>
                 </h2>
                 <div className="grid gap-4">
                   {highPriorityPosts.map((post: MonitoredPost) => (
@@ -297,10 +307,21 @@ export default function Dashboard() {
             {/* Normal Priority Section */}
             {normalPriorityPosts?.length > 0 && (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-gray-600 flex items-center gap-2">
-                  Normal Priority Content
-                  {activeTab === "pending" && <span className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">{normalPriorityPosts.length} items</span>}
-                </h2>
+                {activeTab === "pending" ? (
+                  <h2 className="text-xl font-semibold text-gray-600 flex items-center gap-2">
+                    Normal Priority Content
+                    <span className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                      {normalPriorityPosts.length} items
+                    </span>
+                  </h2>
+                ) : (
+                  <h2 className="text-xl font-semibold text-gray-600 flex items-center gap-2">
+                    {activeTab === "replied" ? "Replied Content" : "Ignored Content"}
+                    <span className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                      {normalPriorityPosts.length} items
+                    </span>
+                  </h2>
+                )}
                 <div className="grid gap-4">
                   {normalPriorityPosts.map((post: MonitoredPost) => (
                     <PostCard key={post.id} post={post} />

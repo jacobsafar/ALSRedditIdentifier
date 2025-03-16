@@ -19,6 +19,7 @@ import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { formatDistanceToNow } from "date-fns";
 
 interface PostCardProps {
   post: MonitoredPost;
@@ -123,6 +124,9 @@ export default function PostCard({ post }: PostCardProps) {
             {post.score >= 8 && <AlertTriangle className="h-3 w-3" />}
             Score: {post.score}
           </Badge>
+          <span className="text-sm text-muted-foreground">
+            {formatDistanceToNow(new Date(post.timestamp), { addSuffix: true })}
+          </span>
         </div>
         <a
           href={post.url}
