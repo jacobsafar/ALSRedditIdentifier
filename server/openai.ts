@@ -29,7 +29,6 @@ export async function analyzeContent(
           content: text,
         },
       ],
-      response_format: { type: "json_object" },
     });
 
     const content = response.choices[0].message.content || "{}";
@@ -65,7 +64,6 @@ export async function regenerateReply(
           content: text,
         },
       ],
-      response_format: { type: "text" },
     });
 
     return response.choices[0].message.content || "No reply generated";
