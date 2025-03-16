@@ -1,20 +1,25 @@
 import OpenAI from "openai";
 
+// the newest OpenAI model is "gpt-4o" which was released May 13, 2024
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024
 export async function analyzeContent(text: string, systemPrompt: string): Promise<{
   score: number;
   analysis: string;
   suggestedReply: string;
 }> {
   try {
+    // Add JSON requirement to system prompt if not already present
+    const jsonSystemPrompt = systemPrompt.includes('json') 
+      ? systemPrompt 
+      : systemPrompt + "\nRespond with a JSON object in the following format: { 'score': number between 1-10, 'analysis': string, 'suggestedReply': string }";
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: systemPrompt,
+          content: jsonSystemPrompt,
         },
         {
           role: "user",
