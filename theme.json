@@ -1,6 +1,10 @@
 {
-  "variant": "professional",
-  "primary": "hsl(222.2 47.4% 11.2%)",
+  "variant": "tint",
+  "primary": "hsl(222.2 84% 4.9%)",
   "appearance": "light",
-  "radius": 0.5
+  "radius": 0.75,
+  "animations": {
+    "button": "transform 0.2s ease-in-out",
+    "card": "all 0.3s ease-in-out"
+  }
 }
