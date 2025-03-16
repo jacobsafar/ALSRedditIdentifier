@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Copy, Check, X, AlertTriangle, RefreshCw, Save } from "lucide-react";
+import { ExternalLink, Copy, Check, X, AlertTriangle, RefreshCw, Save, Edit2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -76,16 +76,10 @@ export default function PostCard({ post }: PostCardProps) {
 
   const copyAndMarkReplied = async () => {
     try {
-      // Open Reddit post in new tab
       window.open(post.url, '_blank');
-
-      // Copy reply with appended extension link
       const replyWithExtension = `${post.suggestedReply}\n\n[AIBlock Chrome Extension](https://chromewebstore.google.com/detail/aiblock-block-ai-images-a/mkmlbghcbklnojegbkcdhfonmmopgdc?authuser=0&hl=en)`;
       await navigator.clipboard.writeText(replyWithExtension);
-
-      // Mark as replied
       await updateStatusMutation.mutateAsync("replied");
-
       toast({ title: "Post opened and reply copied" });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -97,7 +91,6 @@ export default function PostCard({ post }: PostCardProps) {
     }
   };
 
-  // Color coding based on score
   const getScoreColor = (score: number) => {
     if (score >= 9) return "bg-red-500 text-white";
     if (score >= 7) return "bg-orange-500 text-white";
@@ -171,7 +164,7 @@ export default function PostCard({ post }: PostCardProps) {
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm">
                       <RefreshCw className="mr-2 h-4 w-4" />
-                      Regenerate
+                      Regenerate Reply
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
@@ -207,7 +200,8 @@ export default function PostCard({ post }: PostCardProps) {
                   onClick={copyAndMarkReplied}
                   disabled={updateStatusMutation.isPending}
                 >
-                  <Copy className="h-4 w-4" />
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy & Open in Reddit
                 </Button>
               </div>
             </div>
@@ -227,7 +221,8 @@ export default function PostCard({ post }: PostCardProps) {
                       setIsEditing(false);
                     }}
                   >
-                    Cancel
+                    <X className="mr-2 h-4 w-4" />
+                    Cancel Edit
                   </Button>
                   <Button
                     size="sm"
@@ -240,11 +235,25 @@ export default function PostCard({ post }: PostCardProps) {
                 </div>
               </div>
             ) : (
-              <div 
-                className="text-muted-foreground cursor-pointer hover:bg-muted/50 p-2 rounded"
-                onClick={() => setIsEditing(true)}
-              >
-                {post.suggestedReply}
+              <div className="relative group">
+                <div 
+                  className="text-muted-foreground cursor-pointer hover:bg-muted/50 p-2 rounded"
+                  onClick={() => setIsEditing(true)}
+                >
+                  {post.suggestedReply}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditing(true);
+                    }}
+                  >
+                    <Edit2 className="mr-2 h-4 w-4" />
+                    Edit Reply
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -259,7 +268,7 @@ export default function PostCard({ post }: PostCardProps) {
             disabled={updateStatusMutation.isPending}
           >
             <X className="mr-2 h-4 w-4" />
-            Ignore
+            Ignore Post
           </Button>
           <Button
             onClick={() => updateStatusMutation.mutate("replied")}

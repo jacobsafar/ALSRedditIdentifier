@@ -33,14 +33,14 @@ type SortOrder = "score_desc" | "score_asc" | "newest" | "oldest" | "post_date_n
 
 export default function Dashboard() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("pending");
+  const [activeTab, setActiveTab] = useState("opportunities"); 
   const [fetchStatus, setFetchStatus] = useState("");
   const [selectedSubreddit, setSelectedSubreddit] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("score_desc");
 
   // Update sort order when tab changes
   useEffect(() => {
-    setSortOrder(activeTab === "pending" ? "score_desc" : "newest");
+    setSortOrder(activeTab === "opportunities" ? "score_desc" : "newest");
   }, [activeTab]);
 
   // Get config for auto-fetch interval
@@ -73,7 +73,6 @@ export default function Dashboard() {
 
   // Filter posts based on selected subreddit
   const filteredPosts = posts?.filter((post: MonitoredPost) => {
-    // Filter by subreddit if one is selected
     if (selectedSubreddit !== "all" && post.subreddit !== selectedSubreddit) {
       return false;
     }
@@ -87,8 +86,8 @@ export default function Dashboard() {
     const aPostTime = new Date(a.timestamp);
     const bPostTime = new Date(b.timestamp);
 
-    // For non-pending tabs, prioritize status change time by default
-    if (activeTab !== "pending" && sortOrder === "newest") {
+    // For non-opportunities tabs, prioritize status change time by default
+    if (activeTab !== "opportunities" && sortOrder === "newest") {
       return bActionTime.getTime() - aActionTime.getTime();
     }
 
@@ -117,15 +116,15 @@ export default function Dashboard() {
     }
 
     // Default behavior based on tab
-    return activeTab === "pending"
-      ? b.score - a.score  // Default to score for pending
+    return activeTab === "opportunities"
+      ? b.score - a.score  // Default to score for opportunities
       : bActionTime.getTime() - aActionTime.getTime(); // Default to newest actions for replied/ignored
   });
 
   // Reset filters based on active tab
   const resetFilters = () => {
     setSelectedSubreddit("all");
-    setSortOrder(activeTab === "pending" ? "score_desc" : "newest");
+    setSortOrder(activeTab === "opportunities" ? "score_desc" : "newest");
   };
 
   const fetchMutation = useMutation({
@@ -211,7 +210,7 @@ export default function Dashboard() {
     } else if (activeTab === 'ignored') {
       return type === 'latest' ? "Latest Ignored First" : "Oldest Ignored First";
     }
-    return ""; //should not happen but added for safety
+    return ""; 
   };
 
   return (
@@ -245,24 +244,24 @@ export default function Dashboard() {
           <AlertDialogTrigger asChild>
             <Button variant="destructive" size="sm">
               <Trash2 className="mr-2 h-4 w-4" />
-              Clear All Pending
+              Clear All Opportunities
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently delete all pending posts.
+                This will permanently delete all opportunities in your queue.
                 This action cannot be undone. Posts marked as 'replied' or 'ignored' will not be affected.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>No, Keep Opportunities</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => clearAllMutation.mutate()}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                Delete All Pending
+                Yes, Delete All Opportunities
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -272,21 +271,21 @@ export default function Dashboard() {
           <AlertDialogTrigger asChild>
             <Button variant="outline" size="sm">
               <Ban className="mr-2 h-4 w-4" />
-              Ignore All Pending
+              Ignore All Opportunities
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will mark all pending posts as ignored.
+                This will mark all current opportunities as ignored.
                 You can still view them in the Ignored tab.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={() => ignoreAllMutation.mutate()}>
-                Ignore All
+                Yes, Ignore All
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -305,11 +304,10 @@ export default function Dashboard() {
 
       <Tabs value={activeTab} onValueChange={(value) => {
         setActiveTab(value);
-        // Reset to default sort order when changing tabs
-        setSortOrder(value === "pending" ? "score_desc" : "newest");
+        setSortOrder(value === "opportunities" ? "score_desc" : "newest");
       }}>
         <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="pending">Pending</TabsTrigger>
+          <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
           <TabsTrigger value="replied">Replied</TabsTrigger>
           <TabsTrigger value="ignored">Ignored</TabsTrigger>
         </TabsList>
@@ -341,7 +339,7 @@ export default function Dashboard() {
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
-                  {activeTab === "pending" ? (
+                  {activeTab === "opportunities" ? (
                     <>
                       <SelectItem value="score_desc">Highest Score First</SelectItem>
                       <SelectItem value="score_asc">Lowest Score First</SelectItem>
@@ -364,8 +362,8 @@ export default function Dashboard() {
 
             {/* Show reset button when filters are not at default values */}
             {(selectedSubreddit !== "all" ||
-              (activeTab === "pending" && sortOrder !== "score_desc") ||
-              (activeTab !== "pending" && sortOrder !== "newest")) && (
+              (activeTab === "opportunities" && sortOrder !== "score_desc") ||
+              (activeTab !== "opportunities" && sortOrder !== "newest")) && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -387,13 +385,13 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* High Priority Section - Only show for pending tab */}
-            {activeTab === "pending" && (
+            {/* High Priority Section - Only show for opportunities tab */}
+            {activeTab === "opportunities" && (
               <div className="space-y-4">
                 {sortedPosts.filter(post => post.score >= 8).length > 0 && (
                   <>
                     <h2 className="text-xl font-semibold text-red-600 flex items-center gap-2">
-                      High Priority Content
+                      High Priority Opportunities
                       <span className="text-sm bg-red-100 text-red-700 px-2 py-1 rounded-full">
                         {sortedPosts.filter(post => post.score >= 8).length} items
                       </span>
@@ -412,12 +410,12 @@ export default function Dashboard() {
 
             {/* Normal Priority/Replied/Ignored Section */}
             <div className="space-y-4">
-              {(activeTab === "pending" ? sortedPosts.filter(post => post.score < 8).length > 0 : sortedPosts.length > 0) && (
+              {(activeTab === "opportunities" ? sortedPosts.filter(post => post.score < 8).length > 0 : sortedPosts.length > 0) && (
                 <>
                   <h2 className="text-xl font-semibold text-gray-600 flex items-center gap-2">
-                    {activeTab === "pending" ? (
+                    {activeTab === "opportunities" ? (
                       <>
-                        Normal Priority Content
+                        Normal Priority Opportunities
                         <span className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
                           {sortedPosts.filter(post => post.score < 8).length} items
                         </span>
@@ -432,7 +430,7 @@ export default function Dashboard() {
                     )}
                   </h2>
                   <div className="grid gap-4">
-                    {(activeTab === "pending"
+                    {(activeTab === "opportunities"
                       ? sortedPosts.filter(post => post.score < 8)
                       : sortedPosts
                     ).map((post: MonitoredPost) => (
