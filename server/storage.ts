@@ -27,7 +27,7 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   private config: Config = {
     scoreThreshold: 7,
-    checkFrequency: 60,
+    checkFrequency: 1, // 1 hour default
     postsPerFetch: 25,
     openAiPrompt: `You are an AI assistant analyzing Reddit content for sentiment about AI technology.
 Please analyze the following text and respond with a JSON object containing:

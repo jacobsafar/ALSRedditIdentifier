@@ -139,11 +139,20 @@ export default function Settings() {
                     name="checkFrequency"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Check Frequency (seconds)</FormLabel>
+                        <FormLabel>Check Frequency (hours)</FormLabel>
                         <FormControl>
-                          <Input type="number" min={30} max={300} {...field} />
+                          <Input 
+                            type="number" 
+                            min={0.5} 
+                            max={12} 
+                            step={0.5}
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
+                        <p className="text-sm text-muted-foreground">
+                          How often to check for new content (0.5 to 12 hours)
+                        </p>
                       </FormItem>
                     )}
                   />

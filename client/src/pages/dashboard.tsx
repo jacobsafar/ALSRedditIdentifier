@@ -49,7 +49,7 @@ export default function Dashboard() {
       if (!fetchMutation.isPending) {
         fetchMutation.mutate();
       }
-    }, config.checkFrequency * 1000); // Convert seconds to milliseconds
+    }, config.checkFrequency * 60 * 60 * 1000); // Convert hours to milliseconds
 
     return () => clearInterval(intervalId);
   }, [config?.checkFrequency]);
