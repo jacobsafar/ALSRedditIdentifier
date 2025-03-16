@@ -38,6 +38,11 @@ export default function Dashboard() {
   const [selectedSubreddit, setSelectedSubreddit] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("score_desc");
 
+  // Update sort order when tab changes
+  useEffect(() => {
+    setSortOrder(activeTab === "pending" ? "score_desc" : "newest");
+  }, [activeTab]);
+
   // Get config for auto-fetch interval
   const { data: config } = useQuery({
     queryKey: ["/api/config"],
@@ -80,7 +85,12 @@ export default function Dashboard() {
     const aTime = a.statusChangedAt ? new Date(a.statusChangedAt) : new Date(a.timestamp);
     const bTime = b.statusChangedAt ? new Date(b.statusChangedAt) : new Date(b.timestamp);
 
-    // Handle score-based sorting first
+    // For non-pending tabs, prioritize status change time by default
+    if (activeTab !== "pending" && sortOrder === "newest") {
+      return bTime.getTime() - aTime.getTime();
+    }
+
+    // Handle score-based sorting
     if (sortOrder === "score_desc") {
       return b.score - a.score;
     }
@@ -96,14 +106,16 @@ export default function Dashboard() {
       return aTime.getTime() - bTime.getTime();
     }
 
-    // Default to score descending for high priority content
-    return b.score - a.score;
+    // Default behavior based on tab
+    return activeTab === "pending"
+      ? b.score - a.score  // Default to score for pending
+      : bTime.getTime() - aTime.getTime(); // Default to newest for replied/ignored
   });
 
-  // Reset filters
+  // Reset filters based on active tab
   const resetFilters = () => {
     setSelectedSubreddit("all");
-    setSortOrder("score_desc");
+    setSortOrder(activeTab === "pending" ? "score_desc" : "newest");
   };
 
   const fetchMutation = useMutation({
@@ -271,7 +283,11 @@ export default function Dashboard() {
         </Card>
       )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(value) => {
+        setActiveTab(value);
+        // Reset to default sort order when changing tabs
+        setSortOrder(value === "pending" ? "score_desc" : "newest");
+      }}>
         <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="pending">Pending</TabsTrigger>
           <TabsTrigger value="replied">Replied</TabsTrigger>
@@ -289,7 +305,7 @@ export default function Dashboard() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Subreddits</SelectItem>
-                  {uniqueSubreddits.map(subreddit => (
+                  {uniqueSubreddits.map((subreddit: string) => (
                     <SelectItem key={subreddit} value={subreddit}>
                       r/{subreddit}
                     </SelectItem>
@@ -305,16 +321,29 @@ export default function Dashboard() {
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="score_desc">Highest Score First</SelectItem>
-                  <SelectItem value="score_asc">Lowest Score First</SelectItem>
-                  <SelectItem value="newest">Newest First</SelectItem>
-                  <SelectItem value="oldest">Oldest First</SelectItem>
+                  {activeTab === "pending" ? (
+                    <>
+                      <SelectItem value="score_desc">Highest Score First</SelectItem>
+                      <SelectItem value="score_asc">Lowest Score First</SelectItem>
+                      <SelectItem value="newest">Newest First</SelectItem>
+                      <SelectItem value="oldest">Oldest First</SelectItem>
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="newest">Latest Actions First</SelectItem>
+                      <SelectItem value="oldest">Oldest Actions First</SelectItem>
+                      <SelectItem value="score_desc">Highest Score First</SelectItem>
+                      <SelectItem value="score_asc">Lowest Score First</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Reset Filters Button */}
-            {(selectedSubreddit !== "all" || sortOrder !== "score_desc") && (
+            {/* Show reset button when filters are not at default values */}
+            {(selectedSubreddit !== "all" ||
+              (activeTab === "pending" && sortOrder !== "score_desc") ||
+              (activeTab !== "pending" && sortOrder !== "newest")) && (
               <Button
                 variant="ghost"
                 size="sm"
