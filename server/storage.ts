@@ -19,6 +19,8 @@ export interface IStorage {
   // Config management
   getConfig(): Promise<Config>;
   updateConfig(config: Config): Promise<void>;
+  // Add new method to get all processed post IDs
+  getProcessedPostIds(): Promise<string[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -100,6 +102,11 @@ Please analyze the following text and respond with a JSON object containing:
 
   async updateConfig(config: Config): Promise<void> {
     this.config = config;
+  }
+
+  async getProcessedPostIds(): Promise<string[]> {
+    const posts = await db.select({ postId: monitoredPosts.postId }).from(monitoredPosts);
+    return posts.map(post => post.postId);
   }
 }
 

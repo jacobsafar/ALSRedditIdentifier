@@ -158,12 +158,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Processing subreddit: r/${subreddit.name}`);
 
         try {
+          // Fetch posts and comments
           const posts = await redditClient.getNewPosts(subreddit.name, config.postsPerFetch);
           console.log(`Found ${posts.length} posts in r/${subreddit.name}`);
           const comments = await redditClient.getNewComments(subreddit.name, config.postsPerFetch);
           console.log(`Found ${comments.length} comments in r/${subreddit.name}`);
 
-          for (const content of [...posts, ...comments]) {
+          // Get existing post IDs to avoid duplicates
+          const existingPostIds = await storage.getProcessedPostIds();
+          const allContent = [...posts, ...comments];
+          const newContent = allContent.filter(content => !existingPostIds.includes(content.postId));
+
+          console.log(`Found ${newContent.length} new items to process out of ${allContent.length} total items`);
+
+          for (const content of newContent) {
             try {
               totalAnalyzed++;
               console.log(`Analyzing content from ${content.author} in r/${subreddit.name}`);
@@ -202,13 +210,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (errors.length > 0) {
         res.status(207).json({
           message: `Processed ${totalProcessed} out of ${totalAnalyzed} items`,
-          summary: `Found ${totalProcessed} relevant items above threshold`,
+          summary: `Found ${totalProcessed} new relevant items above threshold`,
           errors
         });
       } else {
         res.status(200).json({
           message: `Successfully processed ${totalProcessed} out of ${totalAnalyzed} items`,
-          summary: `Found ${totalProcessed} relevant items above threshold`
+          summary: `Found ${totalProcessed} new relevant items above threshold`
         });
       }
     } catch (error) {
