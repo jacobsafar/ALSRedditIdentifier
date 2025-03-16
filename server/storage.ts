@@ -15,7 +15,7 @@ export interface IStorage {
   updatePostStatus(id: number, status: string): Promise<void>;
   clearAllPosts(): Promise<void>;
   ignoreAllPendingPosts(): Promise<void>;
-  updatePostAnalysis(id: number, analysis: { score: number; analysis: any; suggestedReply: string }): Promise<void>;
+  updatePostAnalysis(id: number, analysis: { score: number; analysis: any; suggestedReply: string; status?: string }): Promise<void>;
 
   // Config management
   getConfig(): Promise<Config>;
@@ -113,14 +113,21 @@ Please analyze the following text and respond with a JSON object containing:
     return posts.map(post => post.postId);
   }
 
-  async updatePostAnalysis(id: number, analysis: { score: number; analysis: any; suggestedReply: string }): Promise<void> {
+  async updatePostAnalysis(id: number, analysis: { score: number; analysis: any; suggestedReply: string; status?: string }): Promise<void> {
+    const updateData: any = {
+      score: analysis.score,
+      analysis: analysis.analysis,
+      suggestedReply: analysis.suggestedReply,
+    };
+
+    // Only update status if it's provided
+    if (analysis.status) {
+      updateData.status = analysis.status;
+    }
+
     await db
       .update(monitoredPosts)
-      .set({
-        score: analysis.score,
-        analysis: analysis.analysis,
-        suggestedReply: analysis.suggestedReply
-      })
+      .set(updateData)
       .where(eq(monitoredPosts.id, id));
   }
 }

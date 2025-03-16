@@ -123,11 +123,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customPrompt || storage.getConfig().openAiPrompt
       );
 
-      // Update the post with new analysis
+      // Update the post with new analysis while preserving status
       await storage.updatePostAnalysis(postId, {
         score: analysis.score,
         analysis: analysis,
-        suggestedReply: analysis.suggestedReply
+        suggestedReply: analysis.suggestedReply,
+        status: post.status // Preserve existing status
       });
 
       res.json({
