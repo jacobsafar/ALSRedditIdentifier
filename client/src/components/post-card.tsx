@@ -77,8 +77,7 @@ export default function PostCard({ post }: PostCardProps) {
   const copyAndMarkReplied = async () => {
     try {
       window.open(post.url, '_blank');
-      const replyWithExtension = `${post.suggestedReply}\n\n[AIBlock Chrome Extension](https://chromewebstore.google.com/detail/aiblock-block-ai-images-a/mkmlbghcbklnojegbkcdhfonmmopgdc?authuser=0&hl=en)`;
-      await navigator.clipboard.writeText(replyWithExtension);
+      await navigator.clipboard.writeText(post.suggestedReply || '');
       await updateStatusMutation.mutateAsync("replied");
       toast({ title: "Post opened and reply copied" });
     } catch (error) {
