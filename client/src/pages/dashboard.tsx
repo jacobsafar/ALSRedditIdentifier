@@ -91,7 +91,12 @@ export default function Dashboard() {
     const bPostTime = new Date(b.timestamp);
 
     // For non-opportunities tabs, prioritize status change time by default
+    // Don't consider statusChangedAt for reply regeneration (when status hasn't changed)
     if (activeTab !== "opportunities" && sortOrder === "newest") {
+      // If status is the same (e.g., both "pending"), use original timestamp
+      if (a.status === b.status) {
+        return bPostTime.getTime() - aPostTime.getTime();
+      }
       return bActionTime.getTime() - aActionTime.getTime();
     }
 
@@ -113,9 +118,17 @@ export default function Dashboard() {
 
     // Handle action time-based sorting
     if (sortOrder === "newest") {
+      // If status is the same, use original timestamp
+      if (a.status === b.status) {
+        return bPostTime.getTime() - aPostTime.getTime();
+      }
       return bActionTime.getTime() - aActionTime.getTime();
     }
     if (sortOrder === "oldest") {
+      // If status is the same, use original timestamp
+      if (a.status === b.status) {
+        return aPostTime.getTime() - bPostTime.getTime();
+      }
       return aActionTime.getTime() - bActionTime.getTime();
     }
 
