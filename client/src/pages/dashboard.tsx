@@ -65,6 +65,13 @@ export default function Dashboard() {
     }
   });
 
+  // Sort posts by score in descending order
+  const sortedPosts = posts?.sort((a: MonitoredPost, b: MonitoredPost) => b.score - a.score);
+
+  // Separate high-priority (score >= 8) from normal priority posts
+  const highPriorityPosts = sortedPosts?.filter((post: MonitoredPost) => post.score >= 8);
+  const normalPriorityPosts = sortedPosts?.filter((post: MonitoredPost) => post.score < 8);
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -114,11 +121,39 @@ export default function Dashboard() {
             ))}
           </div>
         ) : (
-          <div className="grid gap-4">
-            {posts?.map((post: MonitoredPost) => (
-              <PostCard key={post.id} post={post} />
-            ))}
-            {posts?.length === 0 && (
+          <div className="space-y-6">
+            {/* High Priority Section */}
+            {highPriorityPosts?.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-red-600 flex items-center gap-2">
+                  High Priority Content
+                  {activeTab === "pending" && <span className="text-sm bg-red-100 text-red-700 px-2 py-1 rounded-full">{highPriorityPosts.length} items</span>}
+                </h2>
+                <div className="grid gap-4">
+                  {highPriorityPosts.map((post: MonitoredPost) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Normal Priority Section */}
+            {normalPriorityPosts?.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-gray-600 flex items-center gap-2">
+                  Normal Priority Content
+                  {activeTab === "pending" && <span className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">{normalPriorityPosts.length} items</span>}
+                </h2>
+                <div className="grid gap-4">
+                  {normalPriorityPosts.map((post: MonitoredPost) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {(!highPriorityPosts?.length && !normalPriorityPosts?.length) && (
               <Card className="p-6 text-center text-muted-foreground">
                 No {activeTab} posts found
               </Card>
