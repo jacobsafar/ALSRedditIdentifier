@@ -23,7 +23,13 @@ export class DatabaseStorage implements IStorage {
   private config: Config = {
     scoreThreshold: 7,
     checkFrequency: 60,
-    openAiPrompt: "You are an assistant analyzing Reddit content for AI-related sentiment. Rate the relevance and negativity from 1-10, where 10 indicates high relevance and strong negative sentiment about AI. Provide analysis and a suggested reply.",
+    openAiPrompt: `You are an AI assistant analyzing Reddit content for sentiment about AI technology.
+Please analyze the following text and respond with a JSON object containing:
+{
+  "score": number between 1-10 where 10 indicates high relevance and strong negative sentiment about AI,
+  "analysis": a brief explanation of why you gave this score,
+  "suggestedReply": a courteous and factual 1-2 sentence reply that addresses their concerns
+}`,
   };
 
   async getSubreddits(): Promise<MonitoredSubreddit[]> {
