@@ -1,4 +1,4 @@
-import { MonitoredPost, MonitoredSubreddit, InsertPost, InsertSubreddit, Config, monitoredSubreddits, monitoredPosts } from "@shared/schema";
+import { MonitoredPost, MonitoredSubreddit, InsertPost, InsertSubreddit, Config, monitoredSubreddits, monitoredPosts, configTable } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
@@ -25,7 +25,7 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  private config: Config = {
+  private defaultConfig: Config = {
     scoreThreshold: 7,
     checkFrequency: 1, // 1 hour default
     postsPerFetch: 25,
@@ -35,8 +35,54 @@ Please analyze the following text and respond with a JSON object containing:
   "score": number between 1-10 where 10 indicates high relevance and strong negative sentiment about AI,
   "analysis": a brief explanation of why you gave this score,
   "suggestedReply": a courteous and factual 1-2 sentence reply that addresses their concerns
-}`,
+}`
   };
+
+  async getConfig(): Promise<Config> {
+    // Get the first config row or create default if none exists
+    const [config] = await db.select().from(configTable);
+
+    if (!config) {
+      // Insert default config
+      await db.insert(configTable).values({
+        scoreThreshold: this.defaultConfig.scoreThreshold,
+        checkFrequency: this.defaultConfig.checkFrequency,
+        postsPerFetch: this.defaultConfig.postsPerFetch,
+        openAiPrompt: this.defaultConfig.openAiPrompt,
+      });
+      return this.defaultConfig;
+    }
+
+    return {
+      scoreThreshold: config.scoreThreshold,
+      checkFrequency: config.checkFrequency,
+      postsPerFetch: config.postsPerFetch,
+      openAiPrompt: config.openAiPrompt,
+    };
+  }
+
+  async updateConfig(config: Config): Promise<void> {
+    const [existingConfig] = await db.select().from(configTable);
+
+    if (existingConfig) {
+      await db
+        .update(configTable)
+        .set({
+          scoreThreshold: config.scoreThreshold,
+          checkFrequency: config.checkFrequency,
+          postsPerFetch: config.postsPerFetch,
+          openAiPrompt: config.openAiPrompt,
+        })
+        .where(eq(configTable.id, existingConfig.id));
+    } else {
+      await db.insert(configTable).values({
+        scoreThreshold: config.scoreThreshold,
+        checkFrequency: config.checkFrequency,
+        postsPerFetch: config.postsPerFetch,
+        openAiPrompt: config.openAiPrompt,
+      });
+    }
+  }
 
   async getSubreddits(): Promise<MonitoredSubreddit[]> {
     return await db.select().from(monitoredSubreddits);
@@ -98,14 +144,6 @@ Please analyze the following text and respond with a JSON object containing:
       .update(monitoredPosts)
       .set({ status: "ignored" })
       .where(eq(monitoredPosts.status, "pending"));
-  }
-
-  async getConfig(): Promise<Config> {
-    return this.config;
-  }
-
-  async updateConfig(config: Config): Promise<void> {
-    this.config = config;
   }
 
   async getProcessedPostIds(): Promise<string[]> {

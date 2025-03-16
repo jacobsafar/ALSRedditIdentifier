@@ -23,6 +23,15 @@ export const monitoredPosts = pgTable("monitored_posts", {
   status: text("status").notNull().default("pending"), // pending, replied, ignored
 });
 
+// Add config table
+export const configTable = pgTable("config", {
+  id: serial("id").primaryKey(),
+  scoreThreshold: integer("score_threshold").notNull().default(7),
+  checkFrequency: integer("check_frequency").notNull().default(1), // hours
+  postsPerFetch: integer("posts_per_fetch").notNull().default(25),
+  openAiPrompt: text("openai_prompt").notNull(),
+});
+
 export const insertSubredditSchema = createInsertSchema(monitoredSubreddits).pick({
   name: true,
   isActive: true,
