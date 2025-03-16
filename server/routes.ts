@@ -117,13 +117,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Generate a new reply
+      // Only regenerate the reply, not the analysis
       const newReply = await regenerateReply(
         post.title + "\n" + post.content,
         customPrompt
       );
 
-      // Update only the suggested reply while preserving everything else
+      // Update only the suggested reply
       await storage.updatePostAnalysis(postId, {
         score: post.score,
         analysis: post.analysis,
@@ -131,8 +131,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: post.status
       });
 
-      // Return the updated data
       res.json({
+        score: post.score,
+        analysis: post.analysis,
         suggestedReply: newReply
       });
     } catch (error) {

@@ -86,8 +86,6 @@ export async function regenerateReply(
           content: text,
         },
       ],
-      temperature: 0.7, // Add some variation to responses
-      max_tokens: 150, // Limit response length
     });
 
     const reply = response.choices[0].message.content;
@@ -95,7 +93,7 @@ export async function regenerateReply(
       throw new Error("Empty response from OpenAI");
     }
 
-    return reply.trim();
+    return reply;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to generate reply: ${errorMessage}`);
