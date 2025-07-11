@@ -34,12 +34,10 @@ const generateSystemPrompt = (values: {
   basePrompt?: string;
   scoringCriteria?: string;
   analysisGuidance?: string;
-  replyStyle?: string;
 }) => {
-  const basePrompt = values.basePrompt?.trim() || "You are an AI assistant analyzing Reddit content for sentiment about AI technology.";
-  const scoringCriteria = values.scoringCriteria?.trim() || "10 indicates high relevance and strong negative sentiment about AI";
-  const analysisGuidance = values.analysisGuidance?.trim() || "a brief explanation of why you gave this score";
-  const replyStyle = values.replyStyle?.trim() || "a courteous and factual 1-2 sentence reply that addresses their concerns";
+  const basePrompt = values.basePrompt?.trim() || "You are an AI assistant analyzing Reddit content for sentiment from ALS patients and their families.";
+  const scoringCriteria = values.scoringCriteria?.trim() || "10 indicates high emotional distress and urgent need for support";
+  const analysisGuidance = values.analysisGuidance?.trim() || "a brief explanation of why you gave this score and the sentiment category";
 
   // Log generated prompt for debugging
   const generatedPrompt = `${basePrompt}
@@ -47,7 +45,7 @@ Please analyze the following text and respond with a JSON object containing:
 {
   "score": number between 1-10 where ${scoringCriteria},
   "analysis": ${analysisGuidance},
-  "suggestedReply": ${replyStyle}
+  "sentimentCategory": one of: emotional_distress, physical_challenges, support_needs, medical_concerns, daily_struggles
 }`;
 
   console.log('Generated prompt:', generatedPrompt);
@@ -57,10 +55,9 @@ Please analyze the following text and respond with a JSON object containing:
 // Helper function to parse system prompt into form fields
 const parseSystemPrompt = (prompt: string) => {
   const defaultValues = {
-    basePrompt: "You are an AI assistant analyzing Reddit content for sentiment about AI technology.",
-    scoringCriteria: "10 indicates high relevance and strong negative sentiment about AI",
-    analysisGuidance: "a brief explanation of why you gave this score",
-    replyStyle: "a courteous and factual 1-2 sentence reply that addresses their concerns"
+    basePrompt: "You are an AI assistant analyzing Reddit content for sentiment from ALS patients and their families.",
+    scoringCriteria: "10 indicates high emotional distress and urgent need for support",
+    analysisGuidance: "a brief explanation of why you gave this score and the sentiment category"
   };
 
   if (!prompt) return defaultValues;
@@ -73,30 +70,25 @@ const parseSystemPrompt = (prompt: string) => {
     const lines = prompt.split('\n');
     let scoringCriteria = '';
     let analysisGuidance = '';
-    let replyStyle = '';
 
     for (const line of lines) {
       if (line.includes('"score"')) {
         scoringCriteria = line.match(/where\s+(.*?)(?=,|\s*$)/)?.[1]?.trim() || '';
       } else if (line.includes('"analysis"')) {
         analysisGuidance = line.match(/analysis":\s*(.*?)(?=,|\s*$)/)?.[1]?.trim() || '';
-      } else if (line.includes('"suggestedReply"')) {
-        replyStyle = line.match(/suggestedReply":\s*(.*?)(?=\s*}|\s*$)/)?.[1]?.trim() || '';
       }
     }
 
     console.log('Parsed settings:', {
       basePrompt: basePromptMatch,
       scoringCriteria,
-      analysisGuidance,
-      replyStyle
+      analysisGuidance
     });
 
     return {
       basePrompt: basePromptMatch || defaultValues.basePrompt,
       scoringCriteria: scoringCriteria || defaultValues.scoringCriteria,
       analysisGuidance: analysisGuidance || defaultValues.analysisGuidance,
-      replyStyle: replyStyle || defaultValues.replyStyle,
     };
   } catch (error) {
     console.error('Error parsing system prompt:', error);
@@ -121,13 +113,11 @@ export default function Settings() {
     basePrompt: string;
     scoringCriteria: string;
     analysisGuidance: string;
-    replyStyle: string;
   }>({
     resolver: zodResolver(configSchema.extend({
       basePrompt: configSchema.shape.openAiPrompt,
       scoringCriteria: configSchema.shape.openAiPrompt,
       analysisGuidance: configSchema.shape.openAiPrompt,
-      replyStyle: configSchema.shape.openAiPrompt,
     })),
     defaultValues: {
       scoreThreshold: 7,
@@ -137,7 +127,6 @@ export default function Settings() {
       basePrompt: "",
       scoringCriteria: "",
       analysisGuidance: "",
-      replyStyle: "",
     }
   });
 
@@ -174,7 +163,6 @@ export default function Settings() {
       basePrompt: string;
       scoringCriteria: string;
       analysisGuidance: string;
-      replyStyle: string;
     }) => {
       try {
         console.log('Form data before generating prompt:', data);
@@ -383,26 +371,6 @@ export default function Settings() {
                       )}
                     />
 
-                    <FormField
-                      control={configForm.control}
-                      name="replyStyle"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Reply Style Guidelines</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Define how replies should be formatted..."
-                              className="min-h-[100px]"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Specify the tone, length, and style for suggested replies
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                   </div>
 
                   <Button type="submit" disabled={updateConfigMutation.isPending}>
