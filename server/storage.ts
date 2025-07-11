@@ -15,7 +15,7 @@ export interface IStorage {
   updatePostStatus(id: number, status: string): Promise<void>;
   clearAllPosts(): Promise<void>;
   ignoreAllPendingPosts(): Promise<void>;
-  updatePostAnalysis(id: number, analysis: { score: number; analysis: any; suggestedReply: string; status?: string }): Promise<void>;
+  updatePostAnalysis(id: number, analysis: { score: number; analysis: any; sentimentCategory: string; status?: string }): Promise<void>;
 
   // Config management
   getConfig(): Promise<Config>;
@@ -29,12 +29,12 @@ export class DatabaseStorage implements IStorage {
     scoreThreshold: 7,
     checkFrequency: 1, // 1 hour default
     postsPerFetch: 25,
-    openAiPrompt: `You are an AI assistant analyzing Reddit content for sentiment about AI technology.
+    openAiPrompt: `You are an AI assistant analyzing Reddit content from ALS patients and their families to understand their feelings, problems, and immediate issues.
 Please analyze the following text and respond with a JSON object containing:
 {
-  "score": number between 1-10 where 10 indicates high relevance and strong negative sentiment about AI,
-  "analysis": a brief explanation of why you gave this score,
-  "suggestedReply": a courteous and factual 1-2 sentence reply that addresses their concerns
+  "score": number between 1-10 where 10 indicates high emotional distress, urgent medical concerns, or significant daily struggles,
+  "analysis": a brief explanation of the sentiment, challenges, and immediate needs expressed,
+  "sentimentCategory": one of: "emotional_distress", "physical_challenges", "support_needs", "medical_concerns", "daily_struggles"
 }`
   };
 
@@ -154,11 +154,11 @@ Please analyze the following text and respond with a JSON object containing:
     return posts.map(post => post.postId);
   }
 
-  async updatePostAnalysis(id: number, analysis: { score: number; analysis: any; suggestedReply: string; status?: string }): Promise<void> {
+  async updatePostAnalysis(id: number, analysis: { score: number; analysis: any; sentimentCategory: string; status?: string }): Promise<void> {
     const updateData: any = {
       score: analysis.score,
       analysis: analysis.analysis,
-      suggestedReply: analysis.suggestedReply,
+      sentimentCategory: analysis.sentimentCategory,
     };
 
     // Only update status if it's provided

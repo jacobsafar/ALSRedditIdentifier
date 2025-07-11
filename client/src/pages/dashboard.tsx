@@ -33,14 +33,14 @@ type SortOrder = "score_desc" | "score_asc" | "newest" | "oldest" | "post_date_n
 
 export default function Dashboard() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("opportunities");
+  const [activeTab, setActiveTab] = useState("insights");
   const [fetchStatus, setFetchStatus] = useState("");
   const [selectedSubreddit, setSelectedSubreddit] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("score_desc");
 
   // Update sort order when tab changes
   useEffect(() => {
-    setSortOrder(activeTab === "opportunities" ? "score_desc" : "newest");
+    setSortOrder(activeTab === "insights" ? "score_desc" : "newest");
   }, [activeTab]);
 
   // Get config for auto-fetch interval
@@ -66,8 +66,8 @@ export default function Dashboard() {
   const { data: posts, isLoading } = useQuery({
     queryKey: ["/api/posts", activeTab],
     queryFn: () => {
-      // Map opportunities tab to pending status for API compatibility
-      const status = activeTab === "opportunities" ? "pending" : activeTab;
+      // Map insights tab to pending status for API compatibility
+      const status = activeTab === "insights" ? "pending" : activeTab;
       return fetch(`/api/posts?status=${status}`).then(r => r.json());
     }
   });
@@ -128,7 +128,7 @@ export default function Dashboard() {
   // Reset filters based on active tab
   const resetFilters = () => {
     setSelectedSubreddit("all");
-    setSortOrder(activeTab === "opportunities" ? "score_desc" : "newest");
+    setSortOrder(activeTab === "insights" ? "score_desc" : "newest");
   };
 
   const fetchMutation = useMutation({
@@ -209,8 +209,8 @@ export default function Dashboard() {
 
   // Helper function to get sort option label based on active tab
   const getSortLabel = (type: 'latest' | 'oldest') => {
-    if (activeTab === 'replied') {
-      return type === 'latest' ? "Latest Replies First" : "Oldest Replies First";
+    if (activeTab === 'reviewed') {
+      return type === 'latest' ? "Latest Reviewed First" : "Oldest Reviewed First";
     } else if (activeTab === 'ignored') {
       return type === 'latest' ? "Latest Ignored First" : "Oldest Ignored First";
     }
@@ -220,7 +220,7 @@ export default function Dashboard() {
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-4xl font-bold">Reddit AI Monitor</h1>
+        <h1 className="text-4xl font-bold">ALS Patient Sentiment Monitor</h1>
         <div className="flex gap-2">
           <Button
             onClick={() => fetchMutation.mutate()}
@@ -248,24 +248,24 @@ export default function Dashboard() {
           <AlertDialogTrigger asChild>
             <Button variant="destructive" size="sm">
               <Trash2 className="mr-2 h-4 w-4" />
-              Clear All Opportunities
+              Clear All Insights
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently delete all opportunities in your queue.
-                This action cannot be undone. Posts marked as 'replied' or 'ignored' will not be affected.
+                This will permanently delete all insights in your queue.
+                This action cannot be undone. Posts marked as 'reviewed' or 'ignored' will not be affected.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>No, Keep Opportunities</AlertDialogCancel>
+              <AlertDialogCancel>No, Keep Insights</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => clearAllMutation.mutate()}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                Yes, Delete All Opportunities
+                Yes, Delete All Insights
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -275,14 +275,14 @@ export default function Dashboard() {
           <AlertDialogTrigger asChild>
             <Button variant="outline" size="sm">
               <Ban className="mr-2 h-4 w-4" />
-              Ignore All Opportunities
+              Ignore All Insights
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will mark all current opportunities as ignored.
+                This will mark all current insights as ignored.
                 You can still view them in the Ignored tab.
               </AlertDialogDescription>
             </AlertDialogHeader>
@@ -308,11 +308,11 @@ export default function Dashboard() {
 
       <Tabs value={activeTab} onValueChange={(value) => {
         setActiveTab(value);
-        setSortOrder(value === "opportunities" ? "score_desc" : "newest");
+        setSortOrder(value === "insights" ? "score_desc" : "newest");
       }}>
         <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
-          <TabsTrigger value="replied">Replied</TabsTrigger>
+          <TabsTrigger value="insights">Insights</TabsTrigger>
+          <TabsTrigger value="reviewed">Reviewed</TabsTrigger>
           <TabsTrigger value="ignored">Ignored</TabsTrigger>
         </TabsList>
 
@@ -343,7 +343,7 @@ export default function Dashboard() {
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
-                  {activeTab === "opportunities" ? (
+                  {activeTab === "insights" ? (
                     <>
                       <SelectItem value="score_desc">Highest Score First</SelectItem>
                       <SelectItem value="score_asc">Lowest Score First</SelectItem>
@@ -366,8 +366,8 @@ export default function Dashboard() {
 
             {/* Show reset button when filters are not at default values */}
             {(selectedSubreddit !== "all" ||
-              (activeTab === "opportunities" && sortOrder !== "score_desc") ||
-              (activeTab !== "opportunities" && sortOrder !== "newest")) && (
+              (activeTab === "insights" && sortOrder !== "score_desc") ||
+              (activeTab !== "insights" && sortOrder !== "newest")) && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -389,13 +389,13 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* High Priority Section - Only show for opportunities tab */}
-            {activeTab === "opportunities" && (
+            {/* High Priority Section - Only show for insights tab */}
+            {activeTab === "insights" && (
               <div className="space-y-4">
                 {sortedPosts.filter(post => post.score >= 8).length > 0 && (
                   <>
                     <h2 className="text-xl font-semibold text-red-600 flex items-center gap-2">
-                      High Priority Opportunities
+                      High Priority Insights
                       <span className="text-sm bg-red-100 text-red-700 px-2 py-1 rounded-full">
                         {sortedPosts.filter(post => post.score >= 8).length} items
                       </span>
@@ -412,14 +412,14 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Normal Priority/Replied/Ignored Section */}
+            {/* Normal Priority/Reviewed/Ignored Section */}
             <div className="space-y-4">
-              {(activeTab === "opportunities" ? sortedPosts.filter(post => post.score < 8).length > 0 : sortedPosts.length > 0) && (
+              {(activeTab === "insights" ? sortedPosts.filter(post => post.score < 8).length > 0 : sortedPosts.length > 0) && (
                 <>
                   <h2 className="text-xl font-semibold text-gray-600 flex items-center gap-2">
-                    {activeTab === "opportunities" ? (
+                    {activeTab === "insights" ? (
                       <>
-                        Normal Priority Opportunities
+                        Normal Priority Insights
                         <span className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
                           {sortedPosts.filter(post => post.score < 8).length} items
                         </span>

@@ -4,15 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Check, X, AlertTriangle, RefreshCw, Save } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { MonitoredPost } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
@@ -25,23 +22,21 @@ interface PostCardProps {
   post: MonitoredPost;
 }
 
-interface RegenerateReplyResponse {
+interface SentimentUpdateResponse {
   score: number;
   analysis: string;
-  suggestedReply: string;
+  sentimentCategory: string;
 }
 
 export default function PostCard({ post }: PostCardProps) {
   const { toast } = useToast();
-  const [customPrompt, setCustomPrompt] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editedReply, setEditedReply] = useState(post.suggestedReply || "");
+  const [selectedCategory, setSelectedCategory] = useState(post.sentimentCategory || "");
   const [isEditing, setIsEditing] = useState(false);
 
-  // Update editedReply whenever post.suggestedReply changes
+  // Update selectedCategory whenever post.sentimentCategory changes
   useEffect(() => {
-    setEditedReply(post.suggestedReply || "");
-  }, [post.suggestedReply]);
+    setSelectedCategory(post.sentimentCategory || "");
+  }, [post.sentimentCategory]);
 
   const updateStatusMutation = useMutation({
     mutationFn: (status: string) =>
@@ -51,52 +46,32 @@ export default function PostCard({ post }: PostCardProps) {
     }
   });
 
-  const regenerateReplyMutation = useMutation({
-    mutationFn: (prompt: string) =>
-      apiRequest<RegenerateReplyResponse>("POST", `/api/posts/${post.id}/regenerate-reply`, { customPrompt: prompt }),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-      setIsDialogOpen(false);
-      // Update the editedReply state with the new reply
-      setEditedReply(data.suggestedReply);
-      toast({ title: "Reply regenerated successfully" });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to regenerate reply",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
-
-  const saveReplyMutation = useMutation({
-    mutationFn: (reply: string) =>
-      apiRequest("PATCH", `/api/posts/${post.id}/update-reply`, { suggestedReply: reply }),
+  const updateSentimentMutation = useMutation({
+    mutationFn: (category: string) =>
+      apiRequest("PATCH", `/api/posts/${post.id}/sentiment`, { sentimentCategory: category }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       setIsEditing(false);
-      toast({ title: "Reply saved successfully" });
+      toast({ title: "Sentiment category updated successfully" });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to save reply",
+        title: "Failed to update sentiment category",
         description: error.message,
         variant: "destructive"
       });
     }
   });
 
-  const copyAndMarkReplied = async () => {
+  const markAsReviewed = async () => {
     try {
       window.open(post.url, '_blank');
-      await navigator.clipboard.writeText(post.suggestedReply || '');
-      await updateStatusMutation.mutateAsync("replied");
-      toast({ title: "Post opened and reply copied" });
+      await updateStatusMutation.mutateAsync("reviewed");
+      toast({ title: "Post marked as reviewed" });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       toast({
-        title: "Failed to process",
+        title: "Failed to mark as reviewed",
         description: errorMessage,
         variant: "destructive"
       });
@@ -169,95 +144,56 @@ export default function PostCard({ post }: PostCardProps) {
 
         <div>
           <div className="flex items-center justify-between mb-1">
-            <h4 className="font-medium">Suggested Reply</h4>
+            <h4 className="font-medium">Sentiment Category</h4>
             <div className="flex gap-2">
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Regenerate Reply
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Regenerate Reply</DialogTitle>
-                    <DialogDescription>
-                      Enter a custom prompt to generate a new reply for this content.
-                      Leave blank to use the default system prompt.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <Textarea
-                    value={customPrompt}
-                    onChange={(e) => setCustomPrompt(e.target.value)}
-                    placeholder="Enter custom prompt or leave blank for default"
-                    className="min-h-[100px]"
-                  />
-                  <DialogFooter className="mt-4">
-                    <Button
-                      onClick={() => regenerateReplyMutation.mutate(customPrompt)}
-                      disabled={regenerateReplyMutation.isPending}
-                    >
-                      {regenerateReplyMutation.isPending && (
-                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      Regenerate Reply
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-              {isEditing ? (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditedReply(post.suggestedReply || "");
-                      setIsEditing(false);
-                    }}
-                  >
-                    <X className="mr-2 h-4 w-4" />
+              {!isEditing ? (
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Update Category
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
                     Cancel
                   </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => saveReplyMutation.mutate(editedReply)}
-                    disabled={saveReplyMutation.isPending}
+                  <Button 
+                    size="sm" 
+                    onClick={() => updateSentimentMutation.mutate(selectedCategory)}
+                    disabled={updateSentimentMutation.isPending}
                   >
                     <Save className="mr-2 h-4 w-4" />
                     Save
                   </Button>
-                </>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                >
-                  Edit
-                </Button>
+                </div>
               )}
             </div>
           </div>
-          <Textarea
-            value={editedReply}
-            onChange={(e) => {
-              if (!isEditing) {
-                setIsEditing(true);
-              }
-              setEditedReply(e.target.value);
-            }}
-            onClick={() => {
-              if (!isEditing) {
-                setIsEditing(true);
-              }
-            }}
-            className={cn(
-              "min-h-[100px] resize-y",
-              !isEditing && "hover:border-primary/50 cursor-text"
-            )}
-            placeholder="Edit your reply here..."
-          />
+
+          {isEditing ? (
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select sentiment category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="emotional_distress">Emotional Distress</SelectItem>
+                <SelectItem value="physical_challenges">Physical Challenges</SelectItem>
+                <SelectItem value="support_needs">Support Needs</SelectItem>
+                <SelectItem value="medical_concerns">Medical Concerns</SelectItem>
+                <SelectItem value="daily_struggles">Daily Struggles</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">
+                {post.sentimentCategory ? 
+                  post.sentimentCategory.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
+                  'Not categorized'
+                }
+              </Badge>
+            </div>
+          )}
         </div>
+
       </CardContent>
 
       {post.status === "pending" && (
@@ -273,19 +209,19 @@ export default function PostCard({ post }: PostCardProps) {
             </Button>
             <Button
               variant="outline"
-              onClick={() => updateStatusMutation.mutate("replied")}
+              onClick={() => updateStatusMutation.mutate("reviewed")}
               disabled={updateStatusMutation.isPending}
             >
               <Check className="mr-2 h-4 w-4" />
-              Mark as Replied
+              Mark as Reviewed
             </Button>
           </div>
           <Button
-            onClick={copyAndMarkReplied}
+            onClick={markAsReviewed}
             disabled={updateStatusMutation.isPending}
             className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
           >
-            Copy & Open in Reddit
+            View on Reddit
             <ExternalLink className="ml-2 h-4 w-4" />
           </Button>
         </CardFooter>

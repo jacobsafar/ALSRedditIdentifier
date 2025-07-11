@@ -19,9 +19,9 @@ export const monitoredPosts = pgTable("monitored_posts", {
   timestamp: timestamp("timestamp").notNull(),
   score: integer("score").notNull(),
   analysis: jsonb("analysis").notNull(),
-  suggestedReply: text("suggested_reply"),
-  status: text("status").notNull().default("pending"), // pending, replied, ignored
+  status: text("status").notNull().default("pending"), // pending, reviewed, ignored
   statusChangedAt: timestamp("status_changed_at"), // New field to track when status changes
+  sentimentCategory: text("sentiment_category"), // emotional_distress, physical_challenges, support_needs, medical_concerns, daily_struggles
 });
 
 // Add config table
@@ -48,9 +48,9 @@ export const insertPostSchema = createInsertSchema(monitoredPosts).pick({
   timestamp: true,
   score: true,
   analysis: true,
-  suggestedReply: true,
   status: true,
-  statusChangedAt:true
+  statusChangedAt: true,
+  sentimentCategory: true,
 });
 
 export type InsertSubreddit = z.infer<typeof insertSubredditSchema>;

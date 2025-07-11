@@ -2,19 +2,19 @@ import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Extract reply style from the system prompt
-function extractReplyStyle(systemPrompt: string): string {
+// Helper function to extract sentiment categories from the system prompt
+function extractSentimentCategories(systemPrompt: string): string[] {
+  const defaultCategories = ["emotional_distress", "physical_challenges", "support_needs", "medical_concerns", "daily_struggles"];
   try {
-    // Look for the suggestedReply part of the prompt
-    const replyMatch = systemPrompt.match(/suggestedReply":\s*(.*?)(?=\s*}|\s*$)/);
-    if (replyMatch && replyMatch[1]) {
-      return replyMatch[1].trim();
+    // Look for sentiment categories in the prompt
+    const categoryMatch = systemPrompt.match(/"sentimentCategory":\s*one of:\s*"([^"]+)"/);
+    if (categoryMatch && categoryMatch[1]) {
+      return categoryMatch[1].split('", "').map(cat => cat.replace(/"/g, ''));
     }
-    // Fallback to default if no match found
-    return "a courteous and factual 1-2 sentence reply that addresses their concerns";
+    return defaultCategories;
   } catch (error) {
-    console.error("Error extracting reply style:", error);
-    return "a courteous and factual 1-2 sentence reply that addresses their concerns";
+    console.error("Error extracting sentiment categories:", error);
+    return defaultCategories;
   }
 }
 
@@ -25,7 +25,7 @@ export async function analyzeContent(
 ): Promise<{
   score: number;
   analysis: string;
-  suggestedReply: string;
+  sentimentCategory: string;
 }> {
   try {
     // Ensure the prompt requests JSON format
@@ -34,7 +34,7 @@ Please analyze the following text and respond with a JSON object containing:
 {
   "score": number between 1-10,
   "analysis": string explaining your scoring rationale,
-  "suggestedReply": string containing a proposed response
+  "sentimentCategory": string indicating the primary sentiment category
 }`;
 
     const response = await openai.chat.completions.create({
@@ -62,14 +62,14 @@ Please analyze the following text and respond with a JSON object containing:
     // Validate the response structure
     if (typeof result.score !== 'number' || 
         typeof result.analysis !== 'string' || 
-        typeof result.suggestedReply !== 'string') {
+        typeof result.sentimentCategory !== 'string') {
       throw new Error("Invalid response format from OpenAI");
     }
 
     return {
       score: Math.max(1, Math.min(10, Math.round(result.score))),
       analysis: result.analysis || "No analysis provided",
-      suggestedReply: result.suggestedReply || "No reply suggested",
+      sentimentCategory: result.sentimentCategory || "general",
     };
   } catch (error) {
     if (error instanceof Error) {
@@ -82,29 +82,23 @@ Please analyze the following text and respond with a JSON object containing:
   }
 }
 
-export async function regenerateReply(
+export async function categorizeSentiment(
   text: string,
-  customPrompt?: string,
-  configPrompt?: string,
+  categories: string[] = ["emotional_distress", "physical_challenges", "support_needs", "medical_concerns", "daily_struggles"]
 ): Promise<string> {
   try {
-    let prompt = customPrompt;
-
-    if (!prompt && configPrompt) {
-      // Extract the reply style from the config prompt
-      const replyStyle = extractReplyStyle(configPrompt);
-      prompt = `You are an AI assistant providing ${replyStyle}. Focus on addressing the key points and maintaining a helpful, informative tone.`;
-    }
-
-    const defaultPrompt =
-      "You are an AI assistant generating a courteous and factual reply to a Reddit comment or post about AI technology. Generate a 1-2 sentence response that addresses their concerns and provides accurate information.";
+    const prompt = `You are an AI assistant categorizing sentiment from ALS patients and their families. 
+    Based on the following text, determine which category best describes the primary sentiment:
+    Categories: ${categories.join(", ")}
+    
+    Respond with just the category name that best fits.`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Updated to use the latest model
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: prompt || defaultPrompt,
+          content: prompt,
         },
         {
           role: "user",
@@ -113,14 +107,16 @@ export async function regenerateReply(
       ],
     });
 
-    const reply = response.choices[0].message.content;
-    if (!reply) {
+    const category = response.choices[0].message.content?.trim();
+    if (!category) {
       throw new Error("Empty response from OpenAI");
     }
 
-    return reply;
+    // Return the category if it's valid, otherwise return "general"
+    return categories.includes(category) ? category : "general";
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to generate reply: ${errorMessage}`);
+    console.error(`Failed to categorize sentiment: ${errorMessage}`);
+    return "general";
   }
 }

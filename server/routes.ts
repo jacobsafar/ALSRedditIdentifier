@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { RedditClient } from "./reddit";
-import { analyzeContent, regenerateReply } from "./openai"; // Added regenerateReply import
+import { analyzeContent } from "./openai";
 import { insertSubredditSchema, insertPostSchema, configSchema } from "@shared/schema";
 
 let redditClient: RedditClient;
@@ -105,51 +105,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/posts/:id/regenerate-reply", async (req, res) => {
+  // Add endpoint to update sentiment category
+  app.patch("/api/posts/:id/sentiment", async (req, res) => {
     try {
       const postId = Number(req.params.id);
-      const { customPrompt } = req.body;
-
-      // Get the post content and current config
-      const [post] = await storage.getPosts({ id: postId });
-      const config = await storage.getConfig();
-
-      if (!post) {
-        res.status(404).json({ error: "Post not found" });
-        return;
-      }
-
-      // Only regenerate the reply, not the analysis
-      const newReply = await regenerateReply(
-        post.title + "\n" + post.content,
-        customPrompt,
-        config.openAiPrompt // Pass the config prompt
-      );
-
-      // Update only the suggested reply
-      await storage.updatePostAnalysis(postId, {
-        score: post.score,
-        analysis: post.analysis,
-        suggestedReply: newReply,
-        status: post.status
-      });
-
-      res.json({
-        score: post.score,
-        analysis: post.analysis,
-        suggestedReply: newReply
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      res.status(500).json({ error: errorMessage });
-    }
-  });
-
-
-  app.patch("/api/posts/:id/update-reply", async (req, res) => {
-    try {
-      const postId = Number(req.params.id);
-      const { suggestedReply } = req.body;
+      const { sentimentCategory } = req.body;
 
       // Get the post to preserve existing data
       const [post] = await storage.getPosts({ id: postId });
@@ -158,11 +118,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Update only the suggested reply while preserving everything else
+      // Update only the sentiment category while preserving everything else
       await storage.updatePostAnalysis(postId, {
         score: post.score,
         analysis: post.analysis,
-        suggestedReply,
+        sentimentCategory,
         status: post.status
       });
 
@@ -260,13 +220,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     ...content,
                     score: analysis.score,
                     analysis: analysis,
-                    suggestedReply: analysis.suggestedReply,
+                    sentimentCategory: analysis.sentimentCategory,
                     status: "pending"
                   };
 
                   await storage.addPost(post);
                   totalProcessed++;
-                  console.log(`Added post with score ${analysis.score}`);
+                  console.log(`Added post with score ${analysis.score} and category ${analysis.sentimentCategory}`);
                 }
               } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
