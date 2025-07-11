@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 // Helper function to extract sentiment categories from the system prompt
 function extractSentimentCategories(systemPrompt: string): string[] {
@@ -27,6 +27,10 @@ export async function analyzeContent(
   analysis: string;
   sentimentCategory: string;
 }> {
+  if (!openai) {
+    throw new Error("OpenAI API key is not configured. Please add your OPENAI_API_KEY to environment variables.");
+  }
+  
   try {
     // Ensure the prompt requests JSON format
     const jsonSystemPrompt = `${systemPrompt.trim()}
@@ -86,6 +90,11 @@ export async function categorizeSentiment(
   text: string,
   categories: string[] = ["emotional_distress", "physical_challenges", "support_needs", "medical_concerns", "daily_struggles"]
 ): Promise<string> {
+  if (!openai) {
+    console.error("OpenAI API key is not configured");
+    return "general";
+  }
+  
   try {
     const prompt = `You are an AI assistant categorizing sentiment from ALS patients and their families. 
     Based on the following text, determine which category best describes the primary sentiment:
