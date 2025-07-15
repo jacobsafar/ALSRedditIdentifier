@@ -81,6 +81,20 @@ Preferred communication style: Simple, everyday language.
 - Database migrations handled via Drizzle Kit
 - Expects environment variables: DATABASE_URL, REDDIT_*, OPENAI_API_KEY
 
+### Production Deployment Fix (January 2025)
+The deployment configuration in `.replit` uses `npm run dev` which is blocked for security reasons in production deployments. The application has proper production scripts:
+- `npm run build`: Builds both frontend and backend for production
+- `npm start`: Runs the production server with NODE_ENV=production
+
+**For Manual Deployment:**
+1. Run `npm run build` to create production build
+2. Run `npm start` to launch production server
+3. Ensure all environment variables are properly configured
+
+**Scripts Created:**
+- `scripts/deploy.sh`: Bash script for production deployment
+- `scripts/production-start.js`: Node.js script for automated build and start
+
 ### Key Configuration
 - Uses ES modules throughout (type: "module" in package.json)
 - TypeScript configuration supports both client and server code
