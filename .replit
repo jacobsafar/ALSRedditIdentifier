@@ -1,5 +1,5 @@
 modules = ["nodejs-20", "bash", "web"]
-run = "npm run"
+run = "npm run start"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
@@ -8,7 +8,7 @@ channel = "stable-24_05"
 [deployment]
 deploymentTarget = "cloudrun"
 build = ["sh", "-c", "npm run build"]
-run = ["sh", "-c", "npm start"]
+run = ["sh", "-c", "npm run start"]
 
 [[ports]]
 localPort = 5000
@@ -38,5 +38,5 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run"
+args = "npm run dev"
 waitForPort = 5000

@@ -81,20 +81,6 @@ Preferred communication style: Simple, everyday language.
 - Database migrations handled via Drizzle Kit
 - Expects environment variables: DATABASE_URL, REDDIT_*, OPENAI_API_KEY
 
-### Production Deployment Fix (January 2025)
-The deployment configuration in `.replit` uses `npm run dev` which is blocked for security reasons in production deployments. The application has proper production scripts:
-- `npm run build`: Builds both frontend and backend for production
-- `npm start`: Runs the production server with NODE_ENV=production
-
-**For Manual Deployment:**
-1. Run `npm run build` to create production build
-2. Run `npm start` to launch production server
-3. Ensure all environment variables are properly configured
-
-**Scripts Created:**
-- `scripts/deploy.sh`: Bash script for production deployment
-- `scripts/production-start.js`: Node.js script for automated build and start
-
 ### Key Configuration
 - Uses ES modules throughout (type: "module" in package.json)
 - TypeScript configuration supports both client and server code
@@ -118,12 +104,3 @@ The deployment configuration in `.replit` uses `npm run dev` which is blocked fo
 - **UI Updates**: Changed "Opportunities" to "Insights", "Replied" to "Reviewed"
 - **Sentiment Categories**: Added emotional_distress, physical_challenges, support_needs, medical_concerns, daily_struggles
 - **Post Cards**: Replaced reply generation with sentiment categorization interface
-
-## Recent Changes (2025-01-16)
-
-- **Deployment Fix**: Resolved esbuild bundling conflicts with Vite dependencies
-- **Build Scripts**: Created custom build scripts to handle external dependencies properly
-- **External Dependencies**: Added comprehensive external patterns for lightningcss, @babel/*, vite, @vitejs/*, @rollup/*, and other build tools
-- **Production Build**: Enhanced production build process with scripts/build-production.js
-- **Verification**: Added deployment verification script to test build process
-- **Scripts Created**: build-server.js, build-production.js, verify-deployment.js
