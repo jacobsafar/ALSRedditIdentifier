@@ -1,0 +1,33 @@
+#!/usr/bin/env node
+
+import { spawn } from 'child_process';
+
+// Set development environment
+process.env.NODE_ENV = 'development';
+
+console.log('Starting development server...');
+
+// Start the development server using tsx
+const devProcess = spawn('tsx', ['server/index.ts'], {
+  stdio: 'inherit',
+  env: {
+    ...process.env,
+    NODE_ENV: 'development'
+  }
+});
+
+devProcess.on('error', (error) => {
+  console.error('Failed to start development server:', error);
+  process.exit(1);
+});
+
+// Handle graceful shutdown
+process.on('SIGINT', () => {
+  devProcess.kill('SIGINT');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  devProcess.kill('SIGTERM');
+  process.exit(0);
+});
