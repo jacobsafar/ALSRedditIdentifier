@@ -118,3 +118,12 @@ The deployment configuration in `.replit` uses `npm run dev` which is blocked fo
 - **UI Updates**: Changed "Opportunities" to "Insights", "Replied" to "Reviewed"
 - **Sentiment Categories**: Added emotional_distress, physical_challenges, support_needs, medical_concerns, daily_struggles
 - **Post Cards**: Replaced reply generation with sentiment categorization interface
+
+## Recent Changes (2025-01-16)
+
+- **Deployment Fix**: Resolved esbuild bundling conflicts with Vite dependencies
+- **Build Scripts**: Created custom build scripts to handle external dependencies properly
+- **External Dependencies**: Added comprehensive external patterns for lightningcss, @babel/*, vite, @vitejs/*, @rollup/*, and other build tools
+- **Production Build**: Enhanced production build process with scripts/build-production.js
+- **Verification**: Added deployment verification script to test build process
+- **Scripts Created**: build-server.js, build-production.js, verify-deployment.js

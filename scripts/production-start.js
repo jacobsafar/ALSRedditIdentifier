@@ -14,9 +14,9 @@ console.log('🚀 Starting production deployment...');
 // Check if we're in production mode
 process.env.NODE_ENV = 'production';
 
-// First, run the build command
+// First, run the build command using our custom build script
 console.log('📦 Building application...');
-const buildProcess = spawn('npm', ['run', 'build'], {
+const buildProcess = spawn('node', ['scripts/build-production.js'], {
   cwd: rootDir,
   stdio: 'inherit',
   shell: true
